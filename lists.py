@@ -20,7 +20,7 @@ def _ensure_exists(instance, db, key, dtype):
     instance._knownkeys.add(key)
 
 
-def llen(instance, key):
+def llen(instance, key) -> int:
     db = instance.router.connection(key)
     try:
         l = db.execute(f'SELECT COUNT(*) FROM `{key}-l`').fetchone()
@@ -32,7 +32,7 @@ def llen(instance, key):
         db.close()
 
 
-def rpush(instance, key, val) -> int:
+def rpush(instance, key, val):
     db = instance.router.connection(key)
     _ensure_exists(instance, db, key, 'list')
     try:
@@ -42,7 +42,7 @@ def rpush(instance, key, val) -> int:
         db.close()
 
 
-def lpush(instance, key, val) -> int:
+def lpush(instance, key, val):
     db = instance.router.connection(key)
     _ensure_exists(instance, db, key, 'list')
     try:
@@ -52,7 +52,7 @@ def lpush(instance, key, val) -> int:
         db.close()
 
 
-def rpop(instance, key) -> int:
+def rpop(instance, key):
     db = instance.router.connection(key)
     _ensure_exists(instance, db, key, 'list')
     try:
@@ -77,7 +77,7 @@ def rpop(instance, key) -> int:
         db.close()
 
 
-def lpop(instance, key) -> int:
+def lpop(instance, key):
     db = instance.router.connection(key)
     _ensure_exists(instance, db, key, 'list')
     try:
