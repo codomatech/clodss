@@ -22,7 +22,7 @@ The issues section to vote for the next functionality to be developed.
     - [x] rpop
     - [x] rpush
     - [x] lindex
-    - [ ] lrange
+    - [x] lrange
     - [ ] linsert
     - [ ] lrem
 - [ ] hashmaps
