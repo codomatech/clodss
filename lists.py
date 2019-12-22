@@ -100,3 +100,24 @@ def lpop(instance, key):
         raise
     finally:
         db.close()
+
+
+def lindex(instance, key, index: int) -> int:
+    db = instance.router.connection(key)
+    _ensure_exists(instance, db, key, 'list')
+    try:
+        table = f'{key}-l'
+        res = db.execute(f'SELECT COUNT(*) FROM `{table}`').fetchone()
+        lcount = res[0]
+        if index < lcount:
+            query =  f'''SELECT value FROM `{table}`
+                         ORDER BY ROWID DESC LIMIT 1 OFFSET {index}'''
+        else:
+            index -= lcount
+            table = f'{key}-r'
+            query =  f'''SELECT value FROM `{table}`
+                         ORDER BY ROWID ASC LIMIT 1 OFFSET {index}'''
+        res = db.execute(query).fetchone()
+        return res[0]
+    finally:
+        db.close()

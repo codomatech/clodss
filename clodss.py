@@ -32,8 +32,10 @@ if __name__ == '__main__':
         db.rpush(key, f'some value #+{i}')
     for i in range(10):
         db.lpush(key, f'some value #-{i}')
-    print(db.llen(key))
+    print('llen', db.llen(key))
+    for i in range(20):
+        print(f'lindex({i})=', db.lindex(key, i))
     for i in range(10):
-        print(db.rpop(key))
-        print(db.lpop(key))
-    print(db.llen(key))
+        print('rpop', db.rpop(key))
+        print('lpop', db.lpop(key))
+    print('llen', db.llen(key))
