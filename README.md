@@ -1,4 +1,4 @@
-# `CLODSS`: CLose Data-Structures Store #
+# `CLODSS`: *Clo*se *D*ata-*S*tructures *S*tore #
 
 `clodss` is a data-structures *on-disk* store with an API compatible with
 `redis`. The goal is to develop a store with the simplicity of the `redis` API
