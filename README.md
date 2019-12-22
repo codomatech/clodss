@@ -21,7 +21,7 @@ The issues section to vote for the next functionality to be developed.
     - [x] lpush
     - [x] rpop
     - [x] rpush
-    - [ ] lindex
+    - [x] lindex
     - [ ] lrange
     - [ ] linsert
     - [ ] lrem
