@@ -38,11 +38,15 @@ if __name__ == '__main__':
         for i in range(10):
             db.lpush(key, f'some value #-{i+1:02d}')
 
-    resetlist(key)
-    print('llen', db.llen(key))
+    def displaylist(key):
+        for i in range(db.llen(key)):
+            print(f'lindex({i:02d})=', db.lindex(key, i))
 
-    for i in range(20):
-        print(f'lindex({i:02d})=', db.lindex(key, i))
+    resetlist(key)
+
+    print('* llen & lindex\n*\n')
+    print('llen', db.llen(key))
+    displaylist(key)
 
     print('* lrange & ltrim\n*\n')
     ranges = (
@@ -57,8 +61,8 @@ if __name__ == '__main__':
     for rng in ranges:
         resetlist(key)
         print(f'lrange({rng})=\n\t' + '\n\t'.join(db.lrange(key, *rng)))
-        db.ltrim(key, *rng)
         print(f'ltrim {rng}')
+        db.ltrim(key, *rng)
         for i in range(db.llen(key)):
             print(f'lindex({i:02d})=', db.lindex(key, i))
         print('---')
