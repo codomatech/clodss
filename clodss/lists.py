@@ -3,21 +3,20 @@ clodss: list data-structure
 '''
 
 
-def _ensure_exists(instance, db, key, dtype):
+def _listexists(instance, db, key, create=True):
     if key in instance._knownkeys:
         return
-    TABLES = {
-        'list': ['<key>-l', '<key>-r']
-    }
-
-    tables = [tname.replace('<key>', key) for tname in TABLES[dtype]]
+    tables = [f'{key}-l', f'{key}-r']
     x = db.execute('SELECT 1 FROM sqlite_master WHERE '
                    'type="table" AND name=?', (tables[0],)).fetchone()
     if x is None:
+        if not create:
+            return False
         for table in tables:
             db.execute(f'CREATE TABLE `{table}` (value TEXT)')
 
     instance._knownkeys.add(key)
+    return True
 
 
 def llen(instance, key) -> int:
@@ -34,7 +33,7 @@ def llen(instance, key) -> int:
 
 def rpush(instance, key, val):
     db = instance.router.connection(key)
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         db.execute(f'INSERT INTO `{key}-r` VALUES(?)', (val,)).fetchone()
         db.commit()
@@ -45,7 +44,7 @@ def rpush(instance, key, val):
 
 def lpush(instance, key, val):
     db = instance.router.connection(key)
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         db.execute(f'INSERT INTO `{key}-l` VALUES(?)', (val,)).fetchone()
         db.commit()
@@ -56,7 +55,7 @@ def lpush(instance, key, val):
 
 def rpop(instance, key):
     db = instance.router.connection(key)
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         table = f'{key}-r'
         res = db.execute(
@@ -81,7 +80,7 @@ def rpop(instance, key):
 
 def lpop(instance, key):
     db = instance.router.connection(key)
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         table = f'{key}-l'
         res = db.execute(
@@ -129,7 +128,7 @@ def _normalize_index(i: int, size: int, allowoverflow=True) -> int:
 
 def lindex(instance, key, index: int):
     db = instance.router.connection(key)
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         size = llen(instance, key)
         index = _normalize_index(index, size, False)
@@ -149,7 +148,7 @@ def lrange(instance, key, start: int, end: int):
     db = instance.router.connection(key)
     cursor = db.cursor()
     cursor2 = db.cursor()
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         size = llen(instance, key)
         start = _normalize_index(start, size)
@@ -182,7 +181,7 @@ def lrange(instance, key, start: int, end: int):
 
 def ltrim(instance, key, start: int, end: int) -> None:
     db = instance.router.connection(key)
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         size = llen(instance, key)
         start = _normalize_index(start, size)
@@ -224,7 +223,7 @@ def ltrim(instance, key, start: int, end: int) -> None:
 
 def lrem(instance, key, count: int, value) -> None:
     db = instance.router.connection(key)
-    _ensure_exists(instance, db, key, 'list')
+    _listexists(instance, db, key)
     try:
         if count == 0:
             db.executescript(f'''
