@@ -24,6 +24,7 @@ The issues section to vote for the next functionality to be developed.
     - [x] lindex
     - [x] lrange
     - [ ] linsert
+    - [ ] ltrim
     - [ ] lrem
 - [ ] hashmaps
     - [ ] hset
