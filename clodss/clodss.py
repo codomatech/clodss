@@ -48,6 +48,12 @@ if __name__ == '__main__':
     print('llen', db.llen(key))
     displaylist(key)
 
+    print('* lrem\n*\n')
+    val = 'some value #+01'
+    print(f'lrem({val})')
+    db.lrem(key, 1, val)
+    displaylist(key)
+
     print('* lrange & ltrim\n*\n')
     ranges = (
         (7, 14),
