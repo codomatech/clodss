@@ -25,27 +25,46 @@ class StrictRedis:
 
 
 if __name__ == '__main__':
+
     # rudimentary tests
+
     db = StrictRedis(db=0)
     key = 'varname'
 
-    for i in range(10):
-        db.rpush(key, f'some value #+{i+1:02d}')
-    for i in range(10):
-        db.lpush(key, f'some value #-{i+1:02d}')
+    def resetlist(key):
+        db.ltrim(key, 1, 0)
+        for i in range(10):
+            db.rpush(key, f'some value #+{i+1:02d}')
+        for i in range(10):
+            db.lpush(key, f'some value #-{i+1:02d}')
+
+    resetlist(key)
     print('llen', db.llen(key))
 
     for i in range(20):
         print(f'lindex({i:02d})=', db.lindex(key, i))
 
-    for rng in (
-        (7, 14), (2, 9), (15, 20), (14, -2),
-        (17, 17), (17, -3),
+    print('* lrange & ltrim\n*\n')
+    ranges = (
+        (7, 14),
+        (2, 9),
+        (15, 20),
+        (14, -2),
+        (17, 17),
+        (17, -3),
         (17, 999999)
-        ):
+    )
+    for rng in ranges:
+        resetlist(key)
         print(f'lrange({rng})=\n\t' + '\n\t'.join(db.lrange(key, *rng)))
-        #print(f'lrange({rng})=\n\t', list(db.lrange(key, *rng)))
+        db.ltrim(key, *rng)
+        print(f'ltrim {rng}')
+        for i in range(db.llen(key)):
+            print(f'lindex({i:02d})=', db.lindex(key, i))
+        print('---')
 
+    print('* rpop & lpop\n*\n')
+    resetlist(key)
     for i in range(10):
         print('rpop', db.rpop(key))
         print('lpop', db.lpop(key))

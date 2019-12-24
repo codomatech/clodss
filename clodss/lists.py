@@ -178,3 +178,45 @@ def lrange(instance, key, start: int, end: int):
         cursor.close()
         cursor2.close()
         db.close()
+
+
+def ltrim(instance, key, start: int, end: int):
+    db = instance.router.connection(key)
+    _ensure_exists(instance, db, key, 'list')
+    try:
+        size = llen(instance, key)
+        start = _normalize_index(start, size)
+        end = _normalize_index(end, size)
+
+        if start > end or start >= size:
+            db.execute(f'DELETE FROM `{key}-l`')
+            db.execute(f'DELETE FROM `{key}-r`')
+            db.commit()
+            return
+
+        sindex, stable, sorder = _locateindex(db, key, start)
+        eindex, etable, eorder = _locateindex(db, key, end)
+
+        if stable != etable:
+            rlen = db.execute(f'SELECT COUNT(*) FROM `{stable}`').fetchone()[0]
+            sindex = rlen - sindex
+            eindex += 1
+            db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {sindex}')
+            db.execute(f'DELETE FROM `{etable}` LIMIT -1 OFFSET {eindex}')
+        else:
+            if sorder == 'ASC':
+                db.execute(f'DELETE FROM `{key}-l`')
+                l = eindex - sindex + 1
+                db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
+                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {l}')
+            else:
+                db.execute(f'DELETE FROM `{key}-r`')
+                rlen = db.execute(
+                    f'SELECT COUNT(*) FROM `{stable}`').fetchone()[0]
+                l = eindex - sindex + 1
+                sindex = rlen - eindex - 1
+                db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
+                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {l}')
+        db.commit()
+    finally:
+        db.close()
