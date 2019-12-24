@@ -38,6 +38,7 @@ def rpush(instance, key, val):
     try:
         db.execute(f'INSERT INTO `{key}-r` VALUES(?)', (val,)).fetchone()
         db.commit()
+        return 1
     finally:
         db.close()
 
@@ -48,6 +49,7 @@ def lpush(instance, key, val):
     try:
         db.execute(f'INSERT INTO `{key}-l` VALUES(?)', (val,)).fetchone()
         db.commit()
+        return 1
     finally:
         db.close()
 
@@ -115,11 +117,13 @@ def _locateindex(db, key, index: int):
     return index, table, order
 
 
-def _normalize_index(i: int, size: int) -> int:
+def _normalize_index(i: int, size: int, allowoverflow=True) -> int:
     if i < 0:
         i += (abs(i)//size + 1) * size
         return i % size
     else:
+        if i >= size and not allowoverflow:
+            return None
         return min(i, size - 1)
 
 
@@ -128,7 +132,9 @@ def lindex(instance, key, index: int) -> int:
     _ensure_exists(instance, db, key, 'list')
     try:
         size = llen(instance, key)
-        index = _normalize_index(index, size)
+        index = _normalize_index(index, size, False)
+        if index is None:
+            return None
         index, table, order = _locateindex(db, key, index)
         query = f'''SELECT value FROM `{table}`
                     ORDER BY ROWID {order} LIMIT 1 OFFSET {index}'''
