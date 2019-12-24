@@ -127,7 +127,7 @@ def _normalize_index(i: int, size: int, allowoverflow=True) -> int:
         return min(i, size - 1)
 
 
-def lindex(instance, key, index: int) -> int:
+def lindex(instance, key, index: int):
     db = instance.router.connection(key)
     _ensure_exists(instance, db, key, 'list')
     try:
@@ -180,7 +180,7 @@ def lrange(instance, key, start: int, end: int):
         db.close()
 
 
-def ltrim(instance, key, start: int, end: int):
+def ltrim(instance, key, start: int, end: int) -> None:
     db = instance.router.connection(key)
     _ensure_exists(instance, db, key, 'list')
     try:
@@ -217,6 +217,37 @@ def ltrim(instance, key, start: int, end: int):
                 sindex = rlen - eindex - 1
                 db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
                 db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {l}')
+        db.commit()
+    finally:
+        db.close()
+
+
+def lrem(instance, key, count: int, value) -> None:
+    db = instance.router.connection(key)
+    _ensure_exists(instance, db, key, 'list')
+    try:
+        if count == 0:
+            db.executescript(f'''
+                            DELETE FROM `{key}-l`;
+                            DELETE FROM `{key}-r`;
+                            ''')
+            db.commit()
+            return None
+
+        if count < 0:
+            tables = [(f'{key}-r', 'DESC'), (f'{key}-l', 'ASC')]
+            limit = -count
+        else:
+            tables = [(f'{key}-l', 'DESC'), (f'{key}-r', 'ASC')]
+            limit = count
+
+        nremoved = 0
+        for table, order in tables:
+            l = limit - nremoved
+            res = db.execute(f'DELETE FROM `{table}` WHERE value=? ORDER BY ROWID {order} LIMIT {l}', (value, ))
+            nremoved += res.rowcount
+            if nremoved == limit:
+                break
         db.commit()
     finally:
         db.close()
