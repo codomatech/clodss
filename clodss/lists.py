@@ -5,7 +5,7 @@ clodss: list data-structure
 
 def _listexists(instance, db, key, create=True):
     if key in instance._knownkeys:
-        return
+        return True
     tables = [f'{key}-l', f'{key}-r']
     x = db.execute('SELECT 1 FROM sqlite_master WHERE '
                    'type="table" AND name=?', (tables[0],)).fetchone()
@@ -254,12 +254,14 @@ def lrem(instance, key, count: int, value) -> None:
 
 def linsert(instance, key, where, refvalue, value) -> int:
     db = instance.router.connection(key)
+    cursor = db.cursor()
     exists = _listexists(instance, db, key, False)
     try:
         if not exists:
             return 0
 
         size = llen(instance, key)
+        where = where.lower()
 
         table = f'{key}-l'
         res = db.execute(
@@ -267,7 +269,41 @@ def linsert(instance, key, where, refvalue, value) -> int:
             (refvalue, )
         ).fetchone()
         if res is not None:
-            rowid = res.fetchone()[0]
-        db.commit()
+            rowid = res[0]
+            db.execute(f'INSERT INTO `{table}` VALUES("")')
+            db.commit()
+            op = '>' if where == 'before' else '>='
+            cursor.execute(f'SELECT ROWID, value FROM `{table}` WHERE ROWID {op} {rowid}')
+            prv = value
+            params = []
+            for rowid, val in cursor:
+                params.append((prv, rowid))
+                prv = val
+            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?', params)
+            db.commit()
+            return size + 1
+
+        table = f'{key}-r'
+        res = db.execute(
+            f'SELECT ROWID FROM `{table}` WHERE value=? ORDER BY ROWID ASC LIMIT 1',
+            (refvalue, )
+        ).fetchone()
+        if res is not None:
+            rowid = res[0]
+            db.execute(f'INSERT INTO `{table}` VALUES("")')
+            db.commit()
+            op = '>=' if where == 'before' else '>'
+            cursor.execute(f'SELECT ROWID, value FROM `{table}` WHERE ROWID {op} {rowid}')
+            prv = value
+            params = []
+            for rowid, val in cursor:
+                params.append((prv, rowid))
+                prv = val
+            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?', params)
+            db.commit()
+            return size + 1
+
+        return size
     finally:
+        cursor.close()
         db.close()
