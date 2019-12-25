@@ -250,3 +250,24 @@ def lrem(instance, key, count: int, value) -> None:
         db.commit()
     finally:
         db.close()
+
+
+def linsert(instance, key, where, refvalue, value) -> int:
+    db = instance.router.connection(key)
+    exists = _listexists(instance, db, key, False)
+    try:
+        if not exists:
+            return 0
+
+        size = llen(instance, key)
+
+        table = f'{key}-l'
+        res = db.execute(
+            f'SELECT ROWID FROM `{table}` WHERE value=? ORDER BY ROWID DESC LIMIT 1',
+            (refvalue, )
+        ).fetchone()
+        if res is not None:
+            rowid = res.fetchone()[0]
+        db.commit()
+    finally:
+        db.close()
