@@ -64,17 +64,31 @@ if __name__ == '__main__':
 
     resetlist(key)
 
-    print('* llen & lindex\n*\n')
+    print('\n*\n* llen & lindex\n*')
     print('llen', db.llen(key))
     displaylist(key)
 
-    print('* lrem\n*\n')
+    print('\n*\n* lrem\n*')
     val = 'some value #+01'
-    print(f'lrem({val})')
+    print(f'lrem(1, {val})')
     db.lrem(key, 1, val)
     displaylist(key)
 
-    print('* lrange & ltrim\n*\n')
+    print('\n*\n* linsert\n*')
+    val = '** inserted value **'
+    resetlist(key)
+    for refvalue in (
+        'some value #-10',
+        'some value #-01',
+        'some value #+05',
+        'some value #+10'
+        ):
+        print(f'linsert(before & after, {refvalue}, {val})')
+        db.linsert(key, 'before', refvalue, val)
+        db.linsert(key, 'after', refvalue, val)
+    displaylist(key)
+
+    print('\n*\n* lrange & ltrim\n*')
     ranges = (
         (7, 14),
         (2, 9),
@@ -93,14 +107,14 @@ if __name__ == '__main__':
             print(f'lindex({i:02d})=', db.lindex(key, i))
         print('---')
 
-    print('* rpop & lpop\n*\n')
+    print('\n*\n* rpop & lpop\n*')
     resetlist(key)
     for i in range(10):
         print('rpop', db.rpop(key))
         print('lpop', db.lpop(key))
     print('llen', db.llen(key))
 
-    print('* statistics\n*\n')
+    print('\n*\n* statistics\n*')
     for method, (t, n) in db._stats.items():
         t = t * 1000
         print(f'{method}: {t:.2f}ms')

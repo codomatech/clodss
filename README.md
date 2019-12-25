@@ -15,7 +15,7 @@ The issues section to vote for the next functionality to be developed.
 - [ ] del
 - [ ] keys
 - [ ] scan
-- [ ] lists
+- [x] lists
     - [x] llen
     - [x] lpop
     - [x] lpush
@@ -23,7 +23,7 @@ The issues section to vote for the next functionality to be developed.
     - [x] rpush
     - [x] lindex
     - [x] lrange
-    - [ ] linsert
+    - [x] linsert
     - [x] ltrim
     - [x] lrem
 - [ ] hashmaps
