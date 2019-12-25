@@ -24,6 +24,12 @@ class DBConnection:
     def execute(self, *args, **kwargs):
         return self._conn.execute(*args, **kwargs)
 
+    def executemany(self, *args, **kwargs):
+        return self._conn.executemany(*args, **kwargs)
+
+    def executescript(self, *args, **kwargs):
+        return self._conn.executescript(*args, **kwargs)
+
     def commit(self):
         self._conn.commit()
 
