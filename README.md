@@ -1,9 +1,12 @@
-# `CLODSS`: *Clo*se *D*ata-*S*tructures *S*tore #
+# `CLODSS`: *Clo*se<sup>[*](#myfootnote1)</sup> *D*ata-*S*tructures *S*tore #
 
-`clodss` is a data-structures *on-disk* store with an API compatible with
+`clodss` is a data-structures *on-disk* store with an API largly compatible with
 `redis`. The goal is to develop a store with the simplicity of the `redis` API
-which scales beyond memory size, allows harnessing multi-core processors, and
+which scales beyond memory capacity, allows harnessing multi-core processors, and
 does not burden accesses with network latency.
+
+---
+<a name="myfootnote1">*</a> *"Close"* as opposed to *"Remote"*.
 
 ## Roadmap:
 
