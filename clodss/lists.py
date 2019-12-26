@@ -202,12 +202,15 @@ def ltrim(instance, key, start: int, end: int) -> None:
     _listexists(instance, db, key)
     try:
         size = llen(instance, key)
+        s, e = start, end
         start = _normalize_index(start, size)
         end = _normalize_index(end, size)
 
-        if start > end or start >= size:
-            db.execute(f'DELETE FROM `{key}-l`')
-            db.execute(f'DELETE FROM `{key}-r`')
+        if start > end or start >= size or (s > e and s >= 0 and e >= 0):
+            db.executescript('\n'.join([
+                f'DELETE FROM `{key}-l`;',
+                f'DELETE FROM `{key}-r`;'
+                ]))
             db.commit()
             return
 
