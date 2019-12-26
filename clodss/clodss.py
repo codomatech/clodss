@@ -74,6 +74,12 @@ if __name__ == '__main__':
     db.lrem(key, 1, val)
     displaylist(key)
 
+    print('\n*\n* lset\n*')
+    resetlist(key)
+    for i in (0, 5, 10, 15, 19, -3, -12):
+        db.lset(key, i, f'** set value @ {i} **')
+    displaylist(key)
+
     print('\n*\n* linsert\n*')
     val = '** inserted value **'
     resetlist(key)
