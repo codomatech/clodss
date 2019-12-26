@@ -22,11 +22,9 @@ def _listexists(instance, db, key, create=True):
 def llen(instance, key) -> int:
     db = instance.router.connection(key)
     try:
-        l = db.execute(f'SELECT COUNT(*) FROM `{key}-l`').fetchone()
-        r = db.execute(f'SELECT COUNT(*) FROM `{key}-r`').fetchone()
-        return l[0] + r[0]
-    except sqlite3.OperationalError:
-        return 0
+        left = db.execute(f'SELECT COUNT(*) FROM `{key}-l`').fetchone()
+        right = db.execute(f'SELECT COUNT(*) FROM `{key}-r`').fetchone()
+        return left[0] + right[0]
     finally:
         db.close()
 
@@ -63,17 +61,14 @@ def rpop(instance, key):
         ).fetchone()
         if not res:
             table = f'{key}-l'
-            res = db.execute(
-                f'SELECT ROWID, value FROM `{table}` ORDER BY ROWID ASC LIMIT 1'
-            ).fetchone()
+            res = db.execute(f'''SELECT ROWID, value FROM `{table}`
+                             ORDER BY ROWID ASC LIMIT 1''').fetchone()
             if not res:
                 return None
         rowid, val = res
         db.execute(f'DELETE FROM `{table}` WHERE ROWID=?', (rowid,))
         db.commit()
         return val
-    except Exception as e:
-        raise
     finally:
         db.close()
 
@@ -88,17 +83,14 @@ def lpop(instance, key):
         ).fetchone()
         if not res:
             table = f'{key}-r'
-            res = db.execute(
-                f'SELECT ROWID, value FROM `{table}` ORDER BY ROWID ASC LIMIT 1'
-            ).fetchone()
+            res = db.execute(f'''SELECT ROWID, value FROM `{table}`
+                             ORDER BY ROWID ASC LIMIT 1''').fetchone()
             if not res:
                 return None
         rowid, val = res
         db.execute(f'DELETE FROM `{table}` WHERE ROWID=?', (rowid,))
         db.commit()
         return val
-    except Exception as e:
-        raise
     finally:
         db.close()
 
@@ -155,14 +147,14 @@ def lset(instance, key, index: int, value):
         query = f'''SELECT ROWID FROM `{table}`
                     ORDER BY ROWID {order} LIMIT 1 OFFSET {index}'''
         rowid = db.execute(query).fetchone()[0]
-        db.execute(f'UPDATE `{table}` SET VALUE=? WHERE ROWID=?', (value, rowid))
+        db.execute(f'UPDATE `{table}` SET VALUE=? WHERE ROWID=?',
+                   (value, rowid))
         db.commit()
     finally:
         db.close()
 
 
 def lrange(instance, key, start: int, end: int):
-    # TODO generators?
     db = instance.router.connection(key)
     cursor = db.cursor()
     cursor2 = db.cursor()
@@ -190,7 +182,8 @@ def lrange(instance, key, start: int, end: int):
 
         cursor2.execute(f'''SELECT value FROM `{etable}`
                     ORDER BY ROWID {eorder} LIMIT {eindex + 1} OFFSET 0''')
-        return [record[0] for record in cursor] + [record[0] for record in cursor2]
+        return [record[0] for record in cursor] + [
+            record[0] for record in cursor2]
     finally:
         cursor.close()
         cursor2.close()
@@ -226,17 +219,17 @@ def ltrim(instance, key, start: int, end: int) -> None:
         else:
             if sorder == 'ASC':
                 db.execute(f'DELETE FROM `{key}-l`')
-                l = eindex - sindex + 1
+                rsize = eindex - sindex + 1
                 db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
-                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {l}')
+                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {rsize}')
             else:
                 db.execute(f'DELETE FROM `{key}-r`')
                 rlen = db.execute(
                     f'SELECT COUNT(*) FROM `{stable}`').fetchone()[0]
-                l = eindex - sindex + 1
+                rsize = eindex - sindex + 1
                 sindex = rlen - eindex - 1
                 db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
-                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {l}')
+                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {rsize}')
         db.commit()
     finally:
         db.close()
@@ -263,8 +256,10 @@ def lrem(instance, key, count: int, value) -> None:
 
         nremoved = 0
         for table, order in tables:
-            l = limit - nremoved
-            res = db.execute(f'DELETE FROM `{table}` WHERE value=? ORDER BY ROWID {order} LIMIT {l}', (value, ))
+            size = limit - nremoved
+            res = db.execute(f'''DELETE FROM `{table}` WHERE value=?
+                             ORDER BY ROWID {order} LIMIT {size}''',
+                             (value, ))
             nremoved += res.rowcount
             if nremoved == limit:
                 break
@@ -285,42 +280,44 @@ def linsert(instance, key, where, refvalue, value) -> int:
         where = where.lower()
 
         table = f'{key}-l'
-        res = db.execute(
-            f'SELECT ROWID FROM `{table}` WHERE value=? ORDER BY ROWID DESC LIMIT 1',
-            (refvalue, )
-        ).fetchone()
+        res = db.execute(f'''SELECT ROWID FROM `{table}` WHERE value=?
+                         ORDER BY ROWID DESC LIMIT 1''',
+                         (refvalue, )).fetchone()
         if res is not None:
             rowid = res[0]
             db.execute(f'INSERT INTO `{table}` VALUES("")')
             db.commit()
             op = '>' if where == 'before' else '>='
-            cursor.execute(f'SELECT ROWID, value FROM `{table}` WHERE ROWID {op} {rowid}')
+            cursor.execute(f'''SELECT ROWID, value FROM `{table}`
+                           WHERE ROWID {op} {rowid}''')
             prv = value
             params = []
             for rowid, val in cursor:
                 params.append((prv, rowid))
                 prv = val
-            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?', params)
+            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?',
+                           params)
             db.commit()
             return size + 1
 
         table = f'{key}-r'
-        res = db.execute(
-            f'SELECT ROWID FROM `{table}` WHERE value=? ORDER BY ROWID ASC LIMIT 1',
-            (refvalue, )
-        ).fetchone()
+        query = f'''SELECT ROWID FROM `{table}` WHERE value=?
+                    ORDER BY ROWID ASC LIMIT 1'''
+        res = db.execute(query, (refvalue, )).fetchone()
         if res is not None:
             rowid = res[0]
             db.execute(f'INSERT INTO `{table}` VALUES("")')
             db.commit()
             op = '>=' if where == 'before' else '>'
-            cursor.execute(f'SELECT ROWID, value FROM `{table}` WHERE ROWID {op} {rowid}')
+            cursor.execute(f'''SELECT ROWID, value FROM `{table}`
+                           WHERE ROWID {op} {rowid}''')
             prv = value
             params = []
             for rowid, val in cursor:
                 params.append((prv, rowid))
                 prv = val
-            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?', params)
+            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?',
+                           params)
             db.commit()
             return size + 1
 
