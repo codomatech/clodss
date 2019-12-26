@@ -2,7 +2,7 @@ import time
 import os
 from router import Router
 from ilock import ILock, ILockException
-import lists
+import lists, keys
 
 
 def wrapmethod(method, stats=None):
@@ -33,7 +33,7 @@ class StrictRedis:
         self._knownkeys = set()
         self._stats = {} if benchmark else None
 
-        modules = [lists]
+        modules = [keys, lists]
         for module in modules:
             for attr in dir(module):
                 if attr.startswith('_'):

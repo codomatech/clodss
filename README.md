@@ -10,9 +10,9 @@ does not burden accesses with network latency.
 Features will be implemented in the order of demand by the community. Please use
 The issues section to vote for the next functionality to be developed.
 
-- [ ] get
-- [ ] set
-- [ ] del
+- [x] get
+- [x] set
+- [x] del
 - [ ] keys
 - [ ] scan
 - [x] lists
