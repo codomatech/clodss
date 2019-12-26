@@ -143,6 +143,24 @@ def lindex(instance, key, index: int):
         db.close()
 
 
+def lset(instance, key, index: int, value):
+    db = instance.router.connection(key)
+    _listexists(instance, db, key)
+    try:
+        size = llen(instance, key)
+        index = _normalize_index(index, size, False)
+        if index is None:
+            raise ValueError('out of bound index')
+        index, table, order = _locateindex(db, key, index)
+        query = f'''SELECT ROWID FROM `{table}`
+                    ORDER BY ROWID {order} LIMIT 1 OFFSET {index}'''
+        rowid = db.execute(query).fetchone()[0]
+        db.execute(f'UPDATE `{table}` SET VALUE=? WHERE ROWID=?', (value, rowid))
+        db.commit()
+    finally:
+        db.close()
+
+
 def lrange(instance, key, start: int, end: int):
     # TODO generators?
     db = instance.router.connection(key)
