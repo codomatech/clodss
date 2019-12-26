@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/codomatech/clodss.svg?branch=master)](https://travis-ci.org/codomatech/clodss)
+
 # `CLODSS`: *Clo*se<sup>[*](#myfootnote1)</sup> *D*ata-*S*tructures *S*tore #
 
 `clodss` is a data-structures *on-disk* store with an API largly compatible with
