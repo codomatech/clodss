@@ -1,11 +1,11 @@
-import json
 import pytest
 import sys
 sys.path.append('clodss')
-import clodss
+import clodss # noqa
 
 db = clodss.StrictRedis(db=1, decode_responses=True)
 key = 'key-name'
+
 
 def resetlist(key):
     db.ltrim(key, 1, 0)
@@ -24,9 +24,10 @@ def test_llen():
     resetlist(key)
     assert(db.llen(key) == 20)
 
+
 def test_lindex():
     resetlist(key)
-    expected =  [
+    expected = [
         "-10",
         "-09",
         "-08",
@@ -82,7 +83,7 @@ def test_lset():
     resetlist(key)
     for i in (0, 5, 10, 15, 19, -3, -12):
         db.lset(key, i, f'** set value @ {i} **')
-    expected =  [
+    expected = [
         "** set value @ 0 **",
         "-09",
         "-08",
@@ -110,15 +111,10 @@ def test_lset():
 def test_linsert():
     resetlist(key)
     val = '** inserted value **'
-    for refvalue in (
-        '-10',
-        '-01',
-        '+05',
-        '+10'
-        ):
+    for refvalue in ('-10', '-01', '+05', '+10'):
         db.linsert(key, 'before', refvalue, val)
         db.linsert(key, 'after', refvalue, val)
-    expected =   [
+    expected = [
         "** inserted value **",
         "-10",
         "** inserted value **",
@@ -203,20 +199,5 @@ def test_lrange(rng, expected):
 @pytest.mark.parametrize("rng, expected", lrange_data)
 def test_ltrim(rng, expected):
     resetlist(key)
-    #print(db.llen(key), getlist(key))
     db.ltrim(key, *rng)
     assert(getlist(key) == expected)
-    #for rng in ranges:
-        #resetlist(key)
-        #print(f'lrange({rng})=\n\t' + '\n\t'.join(db.lrange(key, *rng)))
-        #print(f'ltrim {rng}')
-        #db.ltrim(key, *rng)
-        #displaylist(key)
-        #print('---')
-
-    #print('\n*\n* rpop & lpop\n*')
-    #resetlist(key)
-    #for i in range(10):
-        #print('rpop', db.rpop(key))
-        #print('lpop', db.lpop(key))
-    #print('llen', db.llen(key))
