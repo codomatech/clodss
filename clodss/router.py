@@ -3,7 +3,6 @@ import sqlite3
 import hashlib
 import time
 import uuid
-from cuttlepool import CuttlePool
 from ilock import ILock
 
 
@@ -38,39 +37,15 @@ class DBConnection:
         self.free = True
 
 
-class SQLitePool(CuttlePool):
-
-    def normalize_resource(self, conn):
-        conn.row_factory = None
-        conn.execute('pragma journal_mode=wal')
-        conn.execute('PRAGMA CACHE_SIZE=500')
-
-    def ping(self, conn):
-        try:
-            rv = conn.execute('SELECT 1').fetchall()
-            return (1,) in rv
-        except sqlite3.Error:
-            return False
-
-
 class Router:
-    def __init__(self, dbpath, factor=3, pooling='default'):
+    def __init__(self, dbpath, factor=3):
         self.factor = factor
         self.dbpath = dbpath
-        self.pooling = pooling
         self.connections = {}
 
     def connection(self, key: bytes):
         db = hashlib.sha1(key.encode('utf-8')).hexdigest()[:self.factor]
         fname = os.path.join(self.dbpath, f'{db}.db')
-
-        if self.pooling == 'cuttlepool':
-            pool = self.connections.get(db)
-            if not pool:
-                pool = SQLitePool(factory=sqlite3.connect, database=fname,
-                                  capacity=50)
-                self.connections[db] = pool
-            return pool.get_resource()
 
         with ILock(f'clodss-{db}-lock', timeout=5):
             conns = self.connections.get(db)
