@@ -22,7 +22,7 @@ def getlist(key):
 
 def test_llen():
     resetlist(key)
-    assert(db.llen(key) == 20)
+    assert db.llen(key) == 20
 
 
 def test_lindex():
@@ -49,7 +49,7 @@ def test_lindex():
         "+09",
         "+10"
     ]
-    assert(getlist(key) == expected)
+    assert getlist(key) == expected
 
 
 def test_lrem():
@@ -76,7 +76,7 @@ def test_lrem():
         "+09",
         "+10"
     ]
-    assert(getlist(key) == expected)
+    assert getlist(key) == expected
 
 
 def test_lset():
@@ -105,7 +105,7 @@ def test_lset():
         "+09",
         "** set value @ 19 **"
     ]
-    assert(getlist(key) == expected)
+    assert getlist(key) == expected
 
 
 def test_linsert():
@@ -144,7 +144,7 @@ def test_linsert():
         "+10",
         "** inserted value **"
     ]
-    assert(getlist(key) == expected)
+    assert getlist(key) == expected
 
 
 lrange_data = (
@@ -193,11 +193,11 @@ lrange_data = (
 @pytest.mark.parametrize("rng, expected", lrange_data)
 def test_lrange(rng, expected):
     resetlist(key)
-    assert(db.lrange(key, *rng) == expected)
+    assert db.lrange(key, *rng) == expected
 
 
 @pytest.mark.parametrize("rng, expected", lrange_data)
 def test_ltrim(rng, expected):
     resetlist(key)
     db.ltrim(key, *rng)
-    assert(getlist(key) == expected)
+    assert getlist(key) == expected
