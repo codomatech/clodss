@@ -112,10 +112,10 @@ def _normalize_index(i: int, size: int, allowoverflow=True) -> int:
     if i < 0:
         i += (abs(i)//size + 1) * size
         return i % size
-    else:
-        if i >= size and not allowoverflow:
-            return None
-        return min(i, size - 1)
+
+    if i >= size and not allowoverflow:
+        return None
+    return min(i, size - 1)
 
 
 def lindex(instance, key, index: int):
@@ -199,16 +199,17 @@ def ltrim(instance, key, start: int, end: int) -> None:
         start = _normalize_index(start, size)
         end = _normalize_index(end, size)
 
-        if start > end or start >= size or (s > e and s >= 0 and e >= 0):
+        truncate = s > e and s >= 0 and e >= 0
+        if truncate or start > end or start >= size:
             db.executescript('\n'.join([
                 f'DELETE FROM `{key}-l`;',
                 f'DELETE FROM `{key}-r`;'
                 ]))
             db.commit()
-            return
+            return None
 
         sindex, stable, sorder = _locateindex(db, key, start)
-        eindex, etable, eorder = _locateindex(db, key, end)
+        eindex, etable, _ = _locateindex(db, key, end)
 
         if stable != etable:
             rlen = db.execute(f'SELECT COUNT(*) FROM `{stable}`').fetchone()[0]
@@ -231,6 +232,7 @@ def ltrim(instance, key, start: int, end: int) -> None:
                 db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
                 db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {rsize}')
         db.commit()
+        return None
     finally:
         db.close()
 
@@ -264,6 +266,7 @@ def lrem(instance, key, count: int, value) -> None:
             if nremoved == limit:
                 break
         db.commit()
+        return None
     finally:
         db.close()
 
