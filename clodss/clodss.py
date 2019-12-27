@@ -1,8 +1,9 @@
 import time
 import os
 from router import Router
-from ilock import ILock, ILockException
-import lists, keys
+from ilock import ILock
+import lists
+import keys
 
 
 def wrapmethod(method, stats=None):
