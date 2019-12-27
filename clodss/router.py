@@ -6,6 +6,7 @@ import uuid
 from cuttlepool import CuttlePool
 from ilock import ILock
 
+
 class DBConnection:
     def __init__(self, fname):
         self.id = uuid.uuid1().hex
@@ -43,7 +44,6 @@ class SQLitePool(CuttlePool):
         conn.row_factory = None
         conn.execute('pragma journal_mode=wal')
         conn.execute('PRAGMA CACHE_SIZE=500')
-        #conn.execute('PRAGMA LOCKING_MODE=EXCLUSIVE')
 
     def ping(self, conn):
         try:
@@ -67,7 +67,8 @@ class Router:
         if self.pooling == 'cuttlepool':
             pool = self.connections.get(db)
             if not pool:
-                pool = SQLitePool(factory=sqlite3.connect, database=fname, capacity=50)
+                pool = SQLitePool(factory=sqlite3.connect, database=fname,
+                                  capacity=50)
                 self.connections[db] = pool
             return pool.get_resource()
 
