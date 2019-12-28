@@ -7,8 +7,8 @@ and does not burden accesses with network latency.
 
 import time
 import os
-from router import Router
 from ilock import ILock
+from router import Router
 import lists
 import keys
 
@@ -39,6 +39,7 @@ class StrictRedis:
         self.decode = decode_responses
         dbpath = os.path.join(os.getcwd(), base, '%02d' % db)
         os.makedirs(dbpath, exist_ok=True)
+        self._dbpath = dbpath
         self.router = Router(dbpath, sharding_factor)
         self.knownkeys = set()
         self._stats = {} if benchmark else None
@@ -51,4 +52,15 @@ class StrictRedis:
                 method = getattr(module, attr)
                 if not callable(method):
                     continue
+                if attr == 'sēt':
+                    # `set` is a reserved keyword
+                    attr = 'set'
                 setattr(StrictRedis, attr, wrapmethod(method, self._stats))
+
+    def stats(self):
+        'gets benchmarking statistics'
+        return self._stats
+
+    def dbpath(self):
+        'gets base path for database files'
+        return self.dbpath

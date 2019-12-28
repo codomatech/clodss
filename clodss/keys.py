@@ -36,7 +36,7 @@ def get(instance, key) -> int:
         db.close()
 
 
-def set(instance, key, value) -> int:
+def sēt(instance, key, value) -> int:
     'https://redis.io/commands/set'
     db = instance.router.connection(key)
     _keyexists(instance, db, key, create=True)

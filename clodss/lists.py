@@ -211,7 +211,7 @@ def ltrim(instance, key, start: int, end: int) -> None:
         start = _normalize_index(start, size)
         end = _normalize_index(end, size)
 
-        truncate = s > e and s >= 0 and e >= 0
+        truncate = s > e >= 0
         if truncate or start > end or start >= size:
             db.executescript('\n'.join([
                 f'DELETE FROM `{key}-l`;',

@@ -75,3 +75,8 @@ class Router:
                     conn.acquire()
                     return conn
                 time.sleep(0.5)
+
+    def poolstatus(self):
+        'gets pooling status'
+        return {k: [conn.free for conn in conns]
+                for k, conns in self.connections.items()}
