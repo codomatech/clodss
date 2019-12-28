@@ -4,6 +4,7 @@ clodss: list data-structure
 
 
 def _listexists(instance, db, key, create=True):
+    'checks if a list exists, optionally creates one if not'
     if key in instance._knownkeys:
         return True
     tables = [f'{key}-l', f'{key}-r']
@@ -20,6 +21,7 @@ def _listexists(instance, db, key, create=True):
 
 
 def llen(instance, key) -> int:
+    'https://redis.io/commands/llen'
     db = instance.router.connection(key)
     try:
         left = db.execute(f'SELECT COUNT(*) FROM `{key}-l`').fetchone()
@@ -30,6 +32,7 @@ def llen(instance, key) -> int:
 
 
 def rpush(instance, key, val):
+    'https://redis.io/commands/rpush'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -41,6 +44,7 @@ def rpush(instance, key, val):
 
 
 def lpush(instance, key, val):
+    'https://redis.io/commands/lpush'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -52,6 +56,7 @@ def lpush(instance, key, val):
 
 
 def rpop(instance, key):
+    'https://redis.io/commands/rpop'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -74,6 +79,7 @@ def rpop(instance, key):
 
 
 def lpop(instance, key):
+    'https://redis.io/commands/lpop'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -96,6 +102,7 @@ def lpop(instance, key):
 
 
 def _locateindex(db, key, index: int):
+    'finds the table and offset for a given index'
     table = f'{key}-l'
     res = db.execute(f'SELECT COUNT(*) FROM `{table}`').fetchone()
     lcount = res[0]
@@ -109,6 +116,7 @@ def _locateindex(db, key, index: int):
 
 
 def _normalize_index(i: int, size: int, allowoverflow=True) -> int:
+    'normalizes negative and oob indices'
     if i < 0:
         i += (abs(i)//size + 1) * size
         return i % size
@@ -119,6 +127,7 @@ def _normalize_index(i: int, size: int, allowoverflow=True) -> int:
 
 
 def lindex(instance, key, index: int):
+    'https://redis.io/commands/lindex'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -136,6 +145,7 @@ def lindex(instance, key, index: int):
 
 
 def lset(instance, key, index: int, value):
+    'https://redis.io/commands/lset'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -155,6 +165,7 @@ def lset(instance, key, index: int, value):
 
 
 def lrange(instance, key, start: int, end: int):
+    'https://redis.io/commands/lrange'
     db = instance.router.connection(key)
     cursor = db.cursor()
     cursor2 = db.cursor()
@@ -191,6 +202,7 @@ def lrange(instance, key, start: int, end: int):
 
 
 def ltrim(instance, key, start: int, end: int) -> None:
+    'https://redis.io/commands/ltrim'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -238,6 +250,7 @@ def ltrim(instance, key, start: int, end: int) -> None:
 
 
 def lrem(instance, key, count: int, value) -> None:
+    'https://redis.io/commands/lrem'
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
@@ -272,6 +285,7 @@ def lrem(instance, key, count: int, value) -> None:
 
 
 def linsert(instance, key, where, refvalue, value) -> int:
+    'https://redis.io/commands/linsert'
     db = instance.router.connection(key)
     cursor = db.cursor()
     exists = _listexists(instance, db, key, False)
