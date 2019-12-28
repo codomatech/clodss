@@ -1,3 +1,7 @@
+'''
+test cases for keys functionality
+'''
+
 import sys
 sys.path.append('clodss')
 import clodss # noqa
