@@ -1,3 +1,10 @@
+'''
+clodss is a data-structures on-disk store with an API largly compatible with
+redis. The goal is to develop a store with the simplicity of the redis API
+which scales beyond memory capacity, allows harnessing multi-core processors,
+and does not burden accesses with network latency.
+'''
+
 import time
 import os
 from router import Router
@@ -7,6 +14,7 @@ import keys
 
 
 def wrapmethod(method, stats=None):
+    'guards all clodss methods with a key-scoped lock'
     def wrapper(*args, **kwargs):
         key = args[1]
         if stats is not None:
@@ -24,6 +32,7 @@ def wrapmethod(method, stats=None):
 
 
 class StrictRedis:
+    'main clodss class'
     def __init__(
             self, db: int = 0, sharding_factor: int = 3, base: str = 'data',
             decode_responses: bool = False, benchmark: bool = True) -> None:

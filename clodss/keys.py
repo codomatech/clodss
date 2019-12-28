@@ -4,6 +4,7 @@ clodss: keys-related functions
 
 
 def _keyexists(instance, db, key, create=True):
+    'checks if a key exists, optionally creates one if not'
     if key in instance._knownkeys:
         return True
     tables = [f'{key}']
@@ -21,6 +22,7 @@ def _keyexists(instance, db, key, create=True):
 
 
 def get(instance, key) -> int:
+    'https://redis.io/commands/get'
     db = instance.router.connection(key)
     exists = _keyexists(instance, db, key, create=False)
     try:
@@ -35,6 +37,7 @@ def get(instance, key) -> int:
 
 
 def set(instance, key, value) -> int:
+    'https://redis.io/commands/set'
     db = instance.router.connection(key)
     _keyexists(instance, db, key, create=True)
     try:
@@ -45,6 +48,7 @@ def set(instance, key, value) -> int:
 
 
 def delete(instance, key) -> int:
+    'https://redis.io/commands/del'
     db = instance.router.connection(key)
     exists = _keyexists(instance, db, key, create=False)
     try:
