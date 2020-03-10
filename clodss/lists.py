@@ -36,7 +36,7 @@ def rpush(instance, key, val):
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
-        db.execute(f'INSERT INTO `{key}-r` VALUES(?)', (val,)).fetchone()
+        db.execute(f'INSERT INTO `{key}-r` VALUES(?)', (val,))
         db.commit()
         return 1
     finally:
@@ -48,7 +48,7 @@ def lpush(instance, key, val):
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
-        db.execute(f'INSERT INTO `{key}-l` VALUES(?)', (val,)).fetchone()
+        db.execute(f'INSERT INTO `{key}-l` VALUES(?)', (val,))
         db.commit()
         return 1
     finally:
