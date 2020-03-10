@@ -2,9 +2,7 @@
 test cases for keys functionality
 '''
 
-import sys
-sys.path.append('clodss')
-import clodss # noqa
+from clodss import clodss
 
 db = clodss.StrictRedis(db=1, decode_responses=True)
 
