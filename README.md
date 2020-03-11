@@ -35,8 +35,8 @@ The issues section to vote for the next functionality to be developed.
     - [x] ltrim
     - [x] lrem
 - [ ] hashmaps
-    - [ ] hset
-    - [ ] hget
+    - [x] hset
+    - [x] hget
     - [ ] hdel
     - [ ] hkeys
     - [ ] hvalues

@@ -10,6 +10,7 @@ import time
 import os
 from ilock import ILock
 from .router import Router
+from . import hashmaps
 from . import lists
 from . import keys
 
@@ -17,6 +18,8 @@ from . import keys
 def wrapmethod(method, stats=None):
     'guards all clodss methods with a key-scoped lock'
     def wrapper(*args, **kwargs):
+        if not args:
+            raise TypeError('too few parameters, `key` is required')
         key = args[1]
         if stats is not None:
             t1 = time.perf_counter()
@@ -45,7 +48,7 @@ class StrictRedis:
         self.knownkeys = set()
         self._stats = {} if benchmark else None
 
-        modules = [keys, lists]
+        modules = [keys, lists, hashmaps]
         for module in modules:
             for attr in dir(module):
                 if attr.startswith('_'):
