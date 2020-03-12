@@ -67,3 +67,17 @@ def test_hgetall():
     db.hset(hkey, 2, 'v2')
     db.hset(hkey, 3, 'v3')
     assert db.hgetall(hkey) == {'1': 'v1', '2': 'v2', '3': 'v3'}
+
+
+def test_hmset():
+    db.delete(hkey)
+    db.hmset(hkey, {'1': 'v1', '2': 'v2', '3': 'v3'})
+    assert db.hget(hkey, 1) == 'v1'
+    assert db.hget(hkey, 2) == 'v2'
+    assert db.hget(hkey, 3) == 'v3'
+
+
+def test_hmget():
+    db.delete(hkey)
+    db.hmset(hkey, {'1': 'v1', '2': 'v2', '3': 'v3'})
+    assert db.hmget(hkey, *range(5)) == [None, 'v1', 'v2', 'v3', None]

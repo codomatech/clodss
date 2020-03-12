@@ -88,3 +88,27 @@ def hgetall(instance, hkey):
                 db.execute(f'SELECT key, value FROM `{hkey}-hash`')}
     finally:
         db.close()
+
+
+def hmset(instance, hkey, mapping):
+    'https://redis.io/commands/hmset'
+    db = instance.router.connection(hkey)
+    _mapexists(instance, db, hkey)
+    try:
+        db.executemany(f'INSERT OR REPLACE INTO `{hkey}-hash` VALUES(?, ?)',
+                       mapping.items())
+        db.commit()
+    finally:
+        db.close()
+
+
+def hmget(instance, hkey, *keys):
+    'https://redis.io/commands/hmget'
+    db = instance.router.connection(hkey)
+    _mapexists(instance, db, hkey)
+    try:
+        values = [db.execute(f'SELECT value FROM `{hkey}-hash` WHERE key=?', (
+            key,)).fetchone() for key in keys]
+        return [None if record is None else record[0] for record in values]
+    finally:
+        db.close()
