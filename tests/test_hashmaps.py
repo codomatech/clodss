@@ -59,3 +59,11 @@ def test_hkeys_hvalues():
     db.hset(hkey, 3, 'v3')
     assert set(db.hkeys(hkey)) == {'1', '2', '3'}
     assert set(db.hvalues(hkey)) == {'v1', 'v2', 'v3'}
+
+
+def test_hgetall():
+    db.delete(hkey)
+    db.hset(hkey, 1, 'v1')
+    db.hset(hkey, 2, 'v2')
+    db.hset(hkey, 3, 'v3')
+    assert db.hgetall(hkey) == {'1': 'v1', '2': 'v2', '3': 'v3'}
