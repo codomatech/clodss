@@ -52,3 +52,27 @@ def hdel(instance, hkey, key):
         return count
     finally:
         db.close()
+
+
+def hkeys(instance, hkey):
+    'https://redis.io/commands/hkeys'
+    db = instance.router.connection(hkey)
+    if not _mapexists(instance, db, hkey, create=False):
+        return []
+    try:
+        return [record[0]
+                for record in db.execute(f'SELECT key FROM `{hkey}-hash`')]
+    finally:
+        db.close()
+
+
+def hvalues(instance, hkey):
+    'https://redis.io/commands/hvalues'
+    db = instance.router.connection(hkey)
+    if not _mapexists(instance, db, hkey, create=False):
+        return []
+    try:
+        return [record[0]
+                for record in db.execute(f'SELECT value FROM `{hkey}-hash`')]
+    finally:
+        db.close()

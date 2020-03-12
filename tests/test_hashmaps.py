@@ -37,7 +37,25 @@ def test_hdel_nonexisting_hash():
     key = 'key_set_nonexisting'
     assert db.hdel(hkey, key) == 0
 
+
 def test_hdel_nonexisting_key():
     key = 'key_set_existing'
     db.hset(hkey, key, 'random value')
     assert db.hdel(hkey, 'nonexisting_key') == 0
+
+
+def test_hkeys_nonexisting():
+    assert db.hkeys('nonexisting_map') == []
+
+
+def test_hvalues_nonexisting():
+    assert db.hvalues('nonexisting_map') == []
+
+
+def test_hkeys_hvalues():
+    db.delete(hkey)
+    db.hset(hkey, 1, 'v1')
+    db.hset(hkey, 2, 'v2')
+    db.hset(hkey, 3, 'v3')
+    assert set(db.hkeys(hkey)) == {'1', '2', '3'}
+    assert set(db.hvalues(hkey)) == {'v1', 'v2', 'v3'}

@@ -38,8 +38,8 @@ The issues section to vote for the next functionality to be developed.
     - [x] hset
     - [x] hget
     - [x] hdel
-    - [ ] hkeys
-    - [ ] hvalues
+    - [x] hkeys
+    - [x] hvalues
     - [ ] hgetall
     - [ ] hmset
     - [ ] hmget
