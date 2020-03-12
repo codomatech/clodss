@@ -51,8 +51,9 @@ def delete(instance, key) -> int:
     'https://redis.io/commands/del'
     db = instance.router.connection(key)
     try:
-        tables = db.execute('SELECT name FROM sqlite_master WHERE '
-                    f'type="table" AND name LIKE "{key}%"').fetchall()
+        tables = db.execute(
+            'SELECT name FROM sqlite_master WHERE '
+            f'type="table" AND name LIKE "{key}%"').fetchall()
         for table in tables:
             db.execute(f'DROP TABLE `{table[0]}`')
         db.commit()
