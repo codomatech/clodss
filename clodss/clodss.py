@@ -45,7 +45,7 @@ class StrictRedis:
         os.makedirs(dbpath, exist_ok=True)
         self._dbpath = dbpath
         self.router = Router(dbpath, sharding_factor)
-        self.knownkeys = set()
+        self.knownkeys = {}
         self._stats = {} if benchmark else None
 
         modules = [keys, lists, hashmaps]
