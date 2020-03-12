@@ -245,10 +245,8 @@ def lrem(instance, key, count: int, value) -> None:
     _listexists(instance, db, key)
     try:
         if count == 0:
-            db.executescript(f'''
-                            DELETE FROM `{key}-l`;
-                            DELETE FROM `{key}-r`;
-                            ''')
+            db.execute(f'DELETE FROM `{key}-l` WHERE value=?', (value,))
+            db.execute(f'DELETE FROM `{key}-r` WHERE value=?', (value,))
             db.commit()
             return None
 
