@@ -6,7 +6,7 @@ from .common import keyexists
 
 
 def _listexists(instance, db, key, create=True):
-    tables = [f'{key}-l', f'{key}-r']
+    tables = [f'{key}﹁l', f'{key}﹁r']
     return keyexists('list', tables, instance, db, key, create)
 
 
@@ -14,8 +14,8 @@ def llen(instance, key) -> int:
     'https://redis.io/commands/llen'
     db = instance.router.connection(key)
     try:
-        left = db.execute(f'SELECT COUNT(*) FROM `{key}-l`').fetchone()
-        right = db.execute(f'SELECT COUNT(*) FROM `{key}-r`').fetchone()
+        left = db.execute(f'SELECT COUNT(*) FROM `{key}﹁l`').fetchone()
+        right = db.execute(f'SELECT COUNT(*) FROM `{key}﹁r`').fetchone()
         return left[0] + right[0]
     finally:
         db.close()
@@ -26,7 +26,7 @@ def rpush(instance, key, val):
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
-        db.execute(f'INSERT INTO `{key}-r` VALUES(?)', (val,))
+        db.execute(f'INSERT INTO `{key}﹁r` VALUES(?)', (val,))
         db.commit()
         return 1
     finally:
@@ -38,7 +38,7 @@ def lpush(instance, key, val):
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
-        db.execute(f'INSERT INTO `{key}-l` VALUES(?)', (val,))
+        db.execute(f'INSERT INTO `{key}﹁l` VALUES(?)', (val,))
         db.commit()
         return 1
     finally:
@@ -50,12 +50,12 @@ def rpop(instance, key):
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
-        table = f'{key}-r'
+        table = f'{key}﹁r'
         res = db.execute(
             f'SELECT ROWID, value FROM `{table}` ORDER BY ROWID DESC LIMIT 1'
         ).fetchone()
         if not res:
-            table = f'{key}-l'
+            table = f'{key}﹁l'
             res = db.execute(f'''SELECT ROWID, value FROM `{table}`
                              ORDER BY ROWID ASC LIMIT 1''').fetchone()
             if not res:
@@ -73,12 +73,12 @@ def lpop(instance, key):
     db = instance.router.connection(key)
     _listexists(instance, db, key)
     try:
-        table = f'{key}-l'
+        table = f'{key}﹁l'
         res = db.execute(
             f'SELECT ROWID, value FROM `{table}` ORDER BY ROWID DESC LIMIT 1'
         ).fetchone()
         if not res:
-            table = f'{key}-r'
+            table = f'{key}﹁r'
             res = db.execute(f'''SELECT ROWID, value FROM `{table}`
                              ORDER BY ROWID ASC LIMIT 1''').fetchone()
             if not res:
@@ -93,14 +93,14 @@ def lpop(instance, key):
 
 def _locateindex(db, key, index: int):
     'finds the table and offset for a given index'
-    table = f'{key}-l'
+    table = f'{key}﹁l'
     res = db.execute(f'SELECT COUNT(*) FROM `{table}`').fetchone()
     lcount = res[0]
     if index < lcount:
         order = 'DESC'
     else:
         index -= lcount
-        table = f'{key}-r'
+        table = f'{key}﹁r'
         order = 'ASC'
     return index, table, order
 
@@ -204,8 +204,8 @@ def ltrim(instance, key, start: int, end: int) -> None:
         truncate = s > e >= 0
         if truncate or start > end or start >= size:
             db.executescript('\n'.join([
-                f'DELETE FROM `{key}-l`;',
-                f'DELETE FROM `{key}-r`;'
+                f'DELETE FROM `{key}﹁l`;',
+                f'DELETE FROM `{key}﹁r`;'
                 ]))
             db.commit()
             return None
@@ -221,12 +221,12 @@ def ltrim(instance, key, start: int, end: int) -> None:
             db.execute(f'DELETE FROM `{etable}` LIMIT -1 OFFSET {eindex}')
         else:
             if sorder == 'ASC':
-                db.execute(f'DELETE FROM `{key}-l`')
+                db.execute(f'DELETE FROM `{key}﹁l`')
                 rsize = eindex - sindex + 1
                 db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
                 db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {rsize}')
             else:
-                db.execute(f'DELETE FROM `{key}-r`')
+                db.execute(f'DELETE FROM `{key}﹁r`')
                 rlen = db.execute(
                     f'SELECT COUNT(*) FROM `{stable}`').fetchone()[0]
                 rsize = eindex - sindex + 1
@@ -245,16 +245,16 @@ def lrem(instance, key, count: int, value) -> None:
     _listexists(instance, db, key)
     try:
         if count == 0:
-            db.execute(f'DELETE FROM `{key}-l` WHERE value=?', (value,))
-            db.execute(f'DELETE FROM `{key}-r` WHERE value=?', (value,))
+            db.execute(f'DELETE FROM `{key}﹁l` WHERE value=?', (value,))
+            db.execute(f'DELETE FROM `{key}﹁r` WHERE value=?', (value,))
             db.commit()
             return None
 
         if count < 0:
-            tables = [(f'{key}-r', 'DESC'), (f'{key}-l', 'ASC')]
+            tables = [(f'{key}﹁r', 'DESC'), (f'{key}﹁l', 'ASC')]
             limit = -count
         else:
-            tables = [(f'{key}-l', 'DESC'), (f'{key}-r', 'ASC')]
+            tables = [(f'{key}﹁l', 'DESC'), (f'{key}﹁r', 'ASC')]
             limit = count
 
         nremoved = 0
@@ -284,7 +284,7 @@ def linsert(instance, key, where, refvalue, value) -> int:
         size = llen(instance, key)
         where = where.lower()
 
-        table = f'{key}-l'
+        table = f'{key}﹁l'
         res = db.execute(f'''SELECT ROWID FROM `{table}` WHERE value=?
                          ORDER BY ROWID DESC LIMIT 1''',
                          (refvalue, )).fetchone()
@@ -305,7 +305,7 @@ def linsert(instance, key, where, refvalue, value) -> int:
             db.commit()
             return size + 1
 
-        table = f'{key}-r'
+        table = f'{key}﹁r'
         query = f'''SELECT ROWID FROM `{table}` WHERE value=?
                     ORDER BY ROWID ASC LIMIT 1'''
         res = db.execute(query, (refvalue, )).fetchone()

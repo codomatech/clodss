@@ -6,8 +6,8 @@ from .common import keyexists
 
 
 def _keyexists(instance, db, key, create=True):
-    tables = [key]
-    initquery = f'INSERT INTO `{key}` VALUES(0)'
+    tables = [f'{key}﹁bytes']
+    initquery = f'INSERT INTO `{key}﹁bytes` VALUES(0)'
     return keyexists('bytes', tables, instance, db,
                      key, create, initquery=initquery)
 
@@ -20,7 +20,7 @@ def get(instance, key) -> int:
         if not exists:
             return None
         res = db.execute(
-            f'SELECT value FROM `{key}` LIMIT 1'
+            f'SELECT value FROM `{key}﹁bytes` LIMIT 1'
         ).fetchone()
         return res[0]
     finally:
@@ -32,7 +32,7 @@ def sēt(instance, key, value) -> int:
     db = instance.router.connection(key)
     _keyexists(instance, db, key, create=True)
     try:
-        db.execute(f'UPDATE `{key}` SET value=? LIMIT 1', (value, ))
+        db.execute(f'UPDATE `{key}﹁bytes` SET value=? LIMIT 1', (value, ))
         db.commit()
     finally:
         db.close()
@@ -42,11 +42,12 @@ def delete(instance, key) -> int:
     'https://redis.io/commands/del'
     db = instance.router.connection(key)
     try:
+        ekey = key.replace('"', '""')
         tables = db.execute(
             'SELECT name FROM sqlite_master WHERE '
-            f'type="table" AND name LIKE "{key}%"').fetchall()
-        for table in tables:
-            db.execute(f'DROP TABLE `{table[0]}`')
+            f'type="table" AND name LIKE "{ekey}%"').fetchall()
+        db.executescript('\n'.join([f'DROP TABLE `{table[0]}`'
+                                    for table in tables]))
         db.commit()
         del instance.knownkeys[key]
     finally:

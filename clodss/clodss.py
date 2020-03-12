@@ -21,6 +21,11 @@ def wrapmethod(method, stats=None):
         if not args:
             raise TypeError('too few parameters, `key` is required')
         key = args[1]
+        if '`' in key or '﹁' in key:
+            raise ValueError('`key` contains invalid character(s)')
+        if key.startswith('sqlite_'):
+            key = f'﹁{key}'
+
         if stats is not None:
             t1 = time.perf_counter()
         with ILock(f'clodss-{key}', timeout=5):
