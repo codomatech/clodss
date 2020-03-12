@@ -13,8 +13,9 @@ def keyexists(keytype, tables, instance, db, key,
         if existingtype != keytype:
             raise ValueError(wrongtypemsg)
         return True
+    ekey = key.replace('"', '""')
     existing = db.execute('SELECT name FROM sqlite_master WHERE '
-                          f'type="table" AND name LIKE "{key}%"').fetchall()
+                          f'type="table" AND name LIKE "{ekey}%"').fetchall()
     existing = {record[0] for record in existing}
     if existing and existing != set(tables):
         raise ValueError(wrongtypemsg)
