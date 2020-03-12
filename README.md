@@ -37,7 +37,7 @@ The issues section to vote for the next functionality to be developed.
 - [ ] hashmaps
     - [x] hset
     - [x] hget
-    - [ ] hdel
+    - [x] hdel
     - [ ] hkeys
     - [ ] hvalues
     - [ ] hgetall

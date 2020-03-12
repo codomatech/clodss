@@ -36,3 +36,19 @@ def hget(instance, hkey, key):
         return None if val is None else val[0]
     finally:
         db.close()
+
+
+def hdel(instance, hkey, key):
+    'https://redis.io/commands/hdel'
+    db = instance.router.connection(hkey)
+    if not _mapexists(instance, db, hkey, create=False):
+        return 0
+    try:
+        cur = db.cursor()
+        cur.execute(f'DELETE FROM `{hkey}-hash` WHERE key=?', (key,))
+        count = cur.rowcount
+        cur.close()
+        db.commit()
+        return count
+    finally:
+        db.close()

@@ -25,3 +25,19 @@ def test_hset_existing():
     db.hset(hkey, key, 'random value')
     db.hset(hkey, key, value)
     assert db.hget(hkey, key) == value
+
+def test_hdel_existing():
+    key = 'key_set_existing'
+    db.hset(hkey, key, 'random value')
+    assert db.hdel(hkey, key) == 1
+    assert db.hget(hkey, key) is None
+
+
+def test_hdel_nonexisting_hash():
+    key = 'key_set_nonexisting'
+    assert db.hdel(hkey, key) == 0
+
+def test_hdel_nonexisting_key():
+    key = 'key_set_existing'
+    db.hset(hkey, key, 'random value')
+    assert db.hdel(hkey, 'nonexisting_key') == 0
