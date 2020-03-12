@@ -50,11 +50,11 @@ def sēt(instance, key, value) -> int:
 def delete(instance, key) -> int:
     'https://redis.io/commands/del'
     db = instance.router.connection(key)
-    exists = _keyexists(instance, db, key, create=False)
     try:
-        if not exists:
-            return
-        db.execute(f'DROP TABLE `{key}`')
+        tables = db.execute('SELECT name FROM sqlite_master WHERE '
+                    f'type="table" AND name LIKE "{key}%"').fetchall()
+        for table in tables:
+            db.execute(f'DROP TABLE `{table[0]}`')
         db.commit()
         instance.knownkeys.remove(key)
     finally:
