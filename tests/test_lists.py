@@ -27,6 +27,30 @@ def test_llen():
     assert db.llen(key) == 20
 
 
+def test_rpop():
+    resetlist(key)
+    assert db.rpop(key) == "+10"
+    assert db.llen(key) == 19
+
+
+def test_rpop_empty():
+    resetlist(key)
+    for _ in range(20): db.rpop(key)
+    assert db.rpop(key) is None
+
+
+def test_lpop():
+    resetlist(key)
+    assert db.lpop(key) == "-10"
+    assert db.llen(key) == 19
+
+
+def test_lpop_empty():
+    resetlist(key)
+    for _ in range(20): db.lpop(key)
+    assert db.lpop(key) is None
+
+
 def test_lindex():
     resetlist(key)
     expected = [
@@ -54,7 +78,35 @@ def test_lindex():
     assert getlist(key) == expected
 
 
-def test_lrem():
+def test_lrem_0():
+    resetlist(key)
+    db.rpush(key, '+01')
+    db.lrem(key, 0, '+01')
+    expected = [
+        "-10",
+        "-09",
+        "-08",
+        "-07",
+        "-06",
+        "-05",
+        "-04",
+        "-03",
+        "-02",
+        "-01",
+        "+02",
+        "+03",
+        "+04",
+        "+05",
+        "+06",
+        "+07",
+        "+08",
+        "+09",
+        "+10"
+    ]
+    assert getlist(key) == expected
+
+
+def test_lrem_1():
     resetlist(key)
     db.lrem(key, 1, '+01')
     expected = [
@@ -68,6 +120,35 @@ def test_lrem():
         "-03",
         "-02",
         "-01",
+        "+02",
+        "+03",
+        "+04",
+        "+05",
+        "+06",
+        "+07",
+        "+08",
+        "+09",
+        "+10"
+    ]
+    assert getlist(key) == expected
+
+
+def test_lrem_2():
+    resetlist(key)
+    db.rpush(key, '+01')
+    db.lrem(key, -1, '+01')
+    expected = [
+        "-10",
+        "-09",
+        "-08",
+        "-07",
+        "-06",
+        "-05",
+        "-04",
+        "-03",
+        "-02",
+        "-01",
+        "+01",
         "+02",
         "+03",
         "+04",
