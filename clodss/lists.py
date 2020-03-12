@@ -2,22 +2,12 @@
 clodss: list data-structure
 '''
 
+from .common import keyexists
+
 
 def _listexists(instance, db, key, create=True):
-    'checks if a list exists, optionally creates one if not'
-    if key in instance.knownkeys:
-        return True
     tables = [f'{key}-l', f'{key}-r']
-    x = db.execute('SELECT 1 FROM sqlite_master WHERE '
-                   'type="table" AND name=?', (tables[0],)).fetchone()
-    if x is None:
-        if not create:
-            return False
-        for table in tables:
-            db.execute(f'CREATE TABLE `{table}` (value TEXT)')
-
-    instance.knownkeys.add(key)
-    return True
+    return keyexists('list', tables, instance, db, key, create)
 
 
 def llen(instance, key) -> int:

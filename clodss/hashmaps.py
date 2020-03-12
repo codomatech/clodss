@@ -2,21 +2,15 @@
 clodss: hashmap data-structure
 '''
 
+from .common import keyexists
+
 
 def _mapexists(instance, db, hkey, create=True):
     'checks if a hashmap exists, optionally creates one if not'
-    if hkey in instance.knownkeys:
-        return True
-    table = hkey
-    x = db.execute('SELECT 1 FROM sqlite_master WHERE '
-                   'type="table" AND name=?', (table,)).fetchone()
-    if x is None:
-        if not create:
-            return False
-        db.execute(f'CREATE TABLE `{table}` (key TEXT UNIQUE, value TEXT)')
-
-    instance.knownkeys.add(hkey)
-    return True
+    tables = [f'{hkey}-hash']
+    columns = 'key TEXT UNIQUE, value TEXT'
+    return keyexists('hash', tables, instance, db,
+                     hkey, create, columns=columns)
 
 
 def hset(instance, hkey, key, val):
@@ -24,7 +18,7 @@ def hset(instance, hkey, key, val):
     db = instance.router.connection(hkey)
     _mapexists(instance, db, hkey)
     try:
-        db.execute(f'INSERT OR REPLACE INTO `{hkey}` VALUES(?, ?)',
+        db.execute(f'INSERT OR REPLACE INTO `{hkey}-hash` VALUES(?, ?)',
                    (key, val))
         db.commit()
         return 1
@@ -38,7 +32,7 @@ def hget(instance, hkey, key):
     _mapexists(instance, db, hkey)
     try:
         val = db.execute(
-            f'SELECT value FROM `{hkey}` WHERE key=?', (key,)).fetchone()
+            f'SELECT value FROM `{hkey}-hash` WHERE key=?', (key,)).fetchone()
         return None if val is None else val[0]
     finally:
         db.close()

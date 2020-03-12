@@ -2,23 +2,14 @@
 clodss: keys-related functions
 '''
 
+from .common import keyexists
+
 
 def _keyexists(instance, db, key, create=True):
-    'checks if a key exists, optionally creates one if not'
-    if key in instance.knownkeys:
-        return True
-    tables = [f'{key}']
-    x = db.execute('SELECT 1 FROM sqlite_master WHERE '
-                   'type="table" AND name=?', (tables[0],)).fetchone()
-    if x is None:
-        if not create:
-            return False
-        for table in tables:
-            db.execute(f'CREATE TABLE `{table}` (value TEXT)')
-            db.execute(f'INSERT INTO `{table}` VALUES("")')
-
-    instance.knownkeys.add(key)
-    return True
+    tables = [key]
+    initquery = f'INSERT INTO `{key}` VALUES(0)'
+    return keyexists('bytes', tables, instance, db,
+                     key, create, initquery=initquery)
 
 
 def get(instance, key) -> int:
@@ -57,6 +48,6 @@ def delete(instance, key) -> int:
         for table in tables:
             db.execute(f'DROP TABLE `{table[0]}`')
         db.commit()
-        instance.knownkeys.remove(key)
+        del instance.knownkeys[key]
     finally:
         db.close()
