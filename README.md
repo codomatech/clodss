@@ -20,6 +20,8 @@ The issues section to vote for the next functionality to be developed.
 - [x] get
 - [x] set
 - [x] del
+- [ ] incr
+- [ ] decr
 - [ ] keys
 - [ ] scan
 - [x] lists
@@ -34,12 +36,12 @@ The issues section to vote for the next functionality to be developed.
     - [x] linsert
     - [x] ltrim
     - [x] lrem
-- [ ] hashmaps
+- [x] hashmaps
     - [x] hset
     - [x] hget
     - [x] hdel
     - [x] hkeys
     - [x] hvalues
     - [x] hgetall
-    - [ ] hmset
-    - [ ] hmget
+    - [x] hmset
+    - [x] hmget
