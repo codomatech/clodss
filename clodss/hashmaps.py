@@ -76,3 +76,15 @@ def hvalues(instance, hkey):
                 for record in db.execute(f'SELECT value FROM `{hkey}-hash`')]
     finally:
         db.close()
+
+
+def hgetall(instance, hkey):
+    'https://redis.io/commands/hgetall'
+    db = instance.router.connection(hkey)
+    if not _mapexists(instance, db, hkey, create=False):
+        return {}
+    try:
+        return {record[0]: record[1] for record in
+                db.execute(f'SELECT key, value FROM `{hkey}-hash`')}
+    finally:
+        db.close()
