@@ -40,6 +40,6 @@ The issues section to vote for the next functionality to be developed.
     - [x] hdel
     - [x] hkeys
     - [x] hvalues
-    - [ ] hgetall
+    - [x] hgetall
     - [ ] hmset
     - [ ] hmget
