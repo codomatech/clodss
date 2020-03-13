@@ -73,3 +73,45 @@ def test_incrby_nonint():
     db.set(key, 'ab')
     with pytest.raises(TypeError):
         db.incrby(key, 44)
+
+
+def test_decr_inited():
+    key = 'key_decr'
+    db.set(key, 5)
+    db.decr(key)
+    assert db.get(key) == '4'
+
+
+def test_decr_uninited():
+    key = 'key_decr_uninited'
+    db.delete(key)
+    db.decr(key)
+    assert db.get(key) == '-1'
+
+
+def test_decr_nonint():
+    key = 'key_decr_nonint'
+    db.set(key, 'ab')
+    with pytest.raises(TypeError):
+        db.decr(key)
+
+
+def test_decrby_inited():
+    key = 'key_decrby'
+    db.set(key, 50)
+    db.decrby(key, 20)
+    assert db.get(key) == '30'
+
+
+def test_decrby_uninited():
+    key = 'key_decrby_uninited'
+    db.delete(key)
+    db.decrby(key, 33)
+    assert db.get(key) == '-33'
+
+
+def test_decrby_nonint():
+    key = 'key_decrby_nonint'
+    db.set(key, 'ab')
+    with pytest.raises(TypeError):
+        db.decrby(key, 44)
