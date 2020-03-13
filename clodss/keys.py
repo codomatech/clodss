@@ -19,9 +19,7 @@ def get(instance, key) -> int:
     try:
         if not exists:
             return None
-        res = db.execute(
-            f'SELECT value FROM `{key}﹁bytes` LIMIT 1'
-        ).fetchone()
+        res = db.execute(f'SELECT value FROM `{key}﹁bytes` LIMIT 1').fetchone()
         return res[0]
     finally:
         db.close()
@@ -46,9 +44,32 @@ def delete(instance, key) -> int:
         tables = db.execute(
             'SELECT name FROM sqlite_master WHERE '
             f'type="table" AND name LIKE "{ekey}%"').fetchall()
-        db.executescript('\n'.join([f'DROP TABLE `{table[0]}`'
-                                    for table in tables]))
+        queries = ';\n'.join([f'DROP TABLE `{table[0]}`' for table in tables])
+        db.executescript(queries)
         db.commit()
-        del instance.knownkeys[key]
+        if key in instance.knownkeys:
+            del instance.knownkeys[key]
     finally:
         db.close()
+
+
+def incr(instance, key, amount=1):
+    'https://redis.io/commands/del'
+    db = instance.router.connection(key)
+    _keyexists(instance, db, key, create=True)
+    try:
+        res = db.execute(f'SELECT value FROM `{key}﹁bytes` LIMIT 1').fetchone()
+        try:
+            val = int('0' if res is None else res[0])
+        except ValueError:
+            raise TypeError(f'value stored at {key} is not an integer')
+        val += amount
+        db.execute(f'UPDATE `{key}﹁bytes` SET value=? LIMIT 1', (val, ))
+        db.commit()
+        return val
+    finally:
+        db.close()
+
+
+def incrby(instance, key, amount):
+    return incr(instance, key, amount)
