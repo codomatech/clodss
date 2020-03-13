@@ -16,10 +16,15 @@ from . import keys
 
 
 def wrapmethod(method, stats=None):
-    'guards all clodss methods with a key-scoped lock'
+    '''
+    - guards all clodss methods with a key-scoped lock
+    - performs sanity checks on key
+    - enures the key has not expired
+    '''
     def wrapper(*args, **kwargs):
-        if not args:
+        if len(args) < 2:
             raise TypeError('too few parameters, `key` is required')
+        instance = args[0]
         key = args[1]
         if '`' in key or '﹁' in key:
             raise ValueError('`key` contains invalid character(s)')
@@ -29,6 +34,7 @@ def wrapmethod(method, stats=None):
         if stats is not None:
             t1 = time.perf_counter()
         with ILock(f'clodss-{key}', timeout=5):
+            instance._checkexpired(key) # pylint: disable=W0212
             result = method(*args, **kwargs)
         if stats is not None:
             t = time.perf_counter() - t1
@@ -51,6 +57,7 @@ class StrictRedis:
         self._dbpath = dbpath
         self.router = Router(dbpath, sharding_factor)
         self.knownkeys = {}
+        self.expiredkeys = {}
         self._stats = {} if benchmark else None
 
         modules = [keys, lists, hashmaps]
@@ -73,3 +80,34 @@ class StrictRedis:
     def dbpath(self):
         'gets base path for database files'
         return self.dbpath
+
+    def _checkexpired(self, key):
+        'checks if a key expired and removes it if so'
+        db = self.router.connection(key)
+        try:
+            exp = [self.expiredkeys.get(key)]
+            if not exp[0]:
+                query = 'SELECT time FROM `﹁expiredkeys﹁` WHERE key=?'
+                exp = db.execute(query, (key,)).fetchone()
+            if exp:
+                t = exp[0]
+                if t > time.time():
+
+                    ekey = key.replace('"', '""')
+                    tables = db.execute(
+                        'SELECT name FROM sqlite_master WHERE '
+                        f'type="table" AND name LIKE "{ekey}%"').fetchall()
+                    queries = ';\n'.join([f'DROP TABLE `{table[0]}`'
+                                          for table in tables])
+                    db.executescript(queries)
+                    db.commit()
+                    if key in self.knownkeys:
+                        del self.knownkeys[key]
+
+                    query = 'DELETE FROM `﹁expiredkeys﹁` WHERE key=?'
+                    db.execute(query, (key,))
+                    db.commit()
+                    return True
+            return False
+        finally:
+            db.close()
