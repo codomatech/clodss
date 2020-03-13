@@ -1,6 +1,8 @@
-"""
+# -*- coding: utf-8 -*-
+
+'''
 common utilities
-"""
+'''
 
 
 def keyexists(keytype, tables, instance, db, key,
@@ -32,3 +34,11 @@ def keyexists(keytype, tables, instance, db, key,
 
     instance.knownkeys[key] = keytype
     return True
+
+
+def _clearexpired(instance, db, key):
+    if instance.checkexpired(key) in (True, 'scheduled'):
+        db.execute('DELETE FROM `﹁expiredkeys﹁` WHERE key=?', (key,))
+        db.commit()
+        if key in instance.keystoexpire:
+            del instance.keystoexpire[key]

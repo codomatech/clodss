@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
+
 '''
 clodss is a data-structures on-disk store with an API largly compatible with
 redis. The goal is to develop a store with the simplicity of the redis API
 which scales beyond memory capacity, allows harnessing multi-core processors,
 and does not burden accesses with network latency.
 '''
-# pylint: disable=E0402
 
 import time
 import os
