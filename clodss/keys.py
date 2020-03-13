@@ -12,7 +12,7 @@ def _keyexists(instance, db, key, create=True):
                      key, create, initquery=initquery)
 
 
-def get(instance, key) -> int:
+def get(instance, key):
     'https://redis.io/commands/get'
     db = instance.router.connection(key)
     exists = _keyexists(instance, db, key, create=False)
@@ -25,7 +25,7 @@ def get(instance, key) -> int:
         db.close()
 
 
-def sēt(instance, key, value) -> int:
+def sēt(instance, key, value):
     'https://redis.io/commands/set'
     db = instance.router.connection(key)
     _keyexists(instance, db, key, create=True)
@@ -36,7 +36,7 @@ def sēt(instance, key, value) -> int:
         db.close()
 
 
-def delete(instance, key) -> int:
+def delete(instance, key):
     'https://redis.io/commands/del'
     db = instance.router.connection(key)
     try:
