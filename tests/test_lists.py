@@ -34,8 +34,7 @@ def test_rpop():
 
 
 def test_rpop_empty():
-    resetlist(key)
-    for _ in range(20): db.rpop(key)
+    db.delete(key)
     assert db.rpop(key) is None
 
 
@@ -46,8 +45,7 @@ def test_lpop():
 
 
 def test_lpop_empty():
-    resetlist(key)
-    for _ in range(20): db.lpop(key)
+    db.delete(key)
     assert db.lpop(key) is None
 
 
