@@ -19,6 +19,12 @@ class DBConnection:
         conn = sqlite3.connect(fname, check_same_thread=False)
         conn.execute('PRAGMA SYNCHRONOUS=OFF')
         conn.execute('PRAGMA CACHE_SIZE=500')
+        query = (
+            'CREATE TABLE IF NOT EXISTS `﹁expiredkeys﹁` '
+            '(key TEXT PRIMARY KEY, time INT)'
+        )
+        conn.execute(query)
+        conn.commit()
         self._conn = conn
 
     def acquire(self):
