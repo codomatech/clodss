@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
+
 '''
 clodss: keys-related functions
 '''
 
 import time
 
-from .common import keyexists
+from .common import keyexists, _clearexpired
 
 
 def _keyexists(instance, db, key, create=True):
@@ -25,14 +27,6 @@ def get(instance, key):
         return res[0]
     finally:
         db.close()
-
-
-def _clearexpired(instance, db, key):
-    if instance.checkexpired(key) in (True, 'scheduled'):
-        db.execute('DELETE FROM `﹁expiredkeys﹁` WHERE key=?', (key,))
-        db.commit()
-        if key in instance.keystoexpire:
-            del instance.keystoexpire[key]
 
 
 def sēt(instance, key, value):
