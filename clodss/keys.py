@@ -54,7 +54,7 @@ def delete(instance, key) -> int:
 
 
 def incr(instance, key, amount=1):
-    'https://redis.io/commands/del'
+    'https://redis.io/commands/incr'
     db = instance.router.connection(key)
     _keyexists(instance, db, key, create=True)
     try:
@@ -72,4 +72,28 @@ def incr(instance, key, amount=1):
 
 
 def incrby(instance, key, amount):
+    'https://redis.io/commands/incrby'
     return incr(instance, key, amount)
+
+
+def decr(instance, key, amount=1):
+    'https://redis.io/commands/decr'
+    db = instance.router.connection(key)
+    _keyexists(instance, db, key, create=True)
+    try:
+        res = db.execute(f'SELECT value FROM `{key}﹁bytes` LIMIT 1').fetchone()
+        try:
+            val = int('0' if res is None else res[0])
+        except ValueError:
+            raise TypeError(f'value stored at {key} is not an integer')
+        val -= amount
+        db.execute(f'UPDATE `{key}﹁bytes` SET value=? LIMIT 1', (val, ))
+        db.commit()
+        return val
+    finally:
+        db.close()
+
+
+def decrby(instance, key, amount):
+    'https://redis.io/commands/decrby'
+    return decr(instance, key, amount)

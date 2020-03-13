@@ -22,8 +22,8 @@ The issues section to vote for the next functionality to be developed.
 - [x] del
 - [x] incr
 - [x] incrby
-- [ ] decr
-- [ ] decrby
+- [x] decr
+- [x] decrby
 - [ ] keys
 - [ ] scan
 - [x] lists
