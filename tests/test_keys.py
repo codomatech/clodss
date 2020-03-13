@@ -1,6 +1,9 @@
 '''
 test cases for keys functionality
 '''
+
+import time
+
 import pytest
 from clodss import clodss
 
@@ -115,3 +118,39 @@ def test_decrby_nonint():
     db.set(key, 'ab')
     with pytest.raises(TypeError):
         db.decrby(key, 44)
+
+
+def test_expire_nonexitent():
+    assert db.expire('non-existing', 5) == 0
+
+
+def test_expire():
+    key = 'key_expire'
+    value = 'some value'
+    db.set(key, value)
+    assert db.expire(key, .5) == 1
+    time.sleep(.1)
+    assert db.get(key) == value
+    time.sleep(.45)
+    assert db.get(key) is None
+
+
+def test_persist_nonexitent():
+    assert db.persist('non-existing') == 0
+
+
+def test_persist_nonscheduled():
+    key = 'key_persist_nonscheduled'
+    db.set(key, 123)
+    assert db.persist(key) == 0
+
+
+def test_persist():
+    key = 'key_persist'
+    value = 'some value'
+    db.set(key, value)
+    db.expire(key, .5)
+    time.sleep(.1)
+    assert db.persist(key) == 1
+    time.sleep(.45)
+    assert db.get(key) == value

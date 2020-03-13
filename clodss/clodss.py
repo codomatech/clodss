@@ -34,7 +34,7 @@ def wrapmethod(method, stats=None):
         if stats is not None:
             t1 = time.perf_counter()
         with ILock(f'clodss-{key}', timeout=5):
-            instance._checkexpired(key) # pylint: disable=W0212
+            instance.checkexpired(key, enforce=True)
             result = method(*args, **kwargs)
         if stats is not None:
             t = time.perf_counter() - t1
@@ -57,7 +57,7 @@ class StrictRedis:
         self._dbpath = dbpath
         self.router = Router(dbpath, sharding_factor)
         self.knownkeys = {}
-        self.expiredkeys = {}
+        self.keystoexpire = {}
         self._stats = {} if benchmark else None
 
         modules = [keys, lists, hashmaps]
@@ -81,18 +81,20 @@ class StrictRedis:
         'gets base path for database files'
         return self.dbpath
 
-    def _checkexpired(self, key):
+    def checkexpired(self, key, enforce=False):
         'checks if a key expired and removes it if so'
         db = self.router.connection(key)
         try:
-            exp = [self.expiredkeys.get(key)]
+            exp = [self.keystoexpire.get(key)]
             if not exp[0]:
                 query = 'SELECT time FROM `﹁expiredkeys﹁` WHERE key=?'
                 exp = db.execute(query, (key,)).fetchone()
             if exp:
                 t = exp[0]
-                if t > time.time():
-
+                now = time.time()
+                if now > t:
+                    if not enforce:
+                        return True
                     ekey = key.replace('"', '""')
                     tables = db.execute(
                         'SELECT name FROM sqlite_master WHERE '
@@ -108,6 +110,7 @@ class StrictRedis:
                     db.execute(query, (key,))
                     db.commit()
                     return True
+                return 'scheduled'
             return False
         finally:
             db.close()

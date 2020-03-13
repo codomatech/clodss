@@ -21,7 +21,7 @@ class DBConnection:
         conn.execute('PRAGMA CACHE_SIZE=500')
         query = (
             'CREATE TABLE IF NOT EXISTS `﹁expiredkeys﹁` '
-            '(key TEXT PRIMARY KEY, time INT)'
+            '(key TEXT PRIMARY KEY, time REAL)'
         )
         conn.execute(query)
         conn.commit()
