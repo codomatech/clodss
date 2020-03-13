@@ -14,6 +14,7 @@ from .router import Router
 from . import hashmaps
 from . import lists
 from . import keys
+from .common import ProblematicSymbols
 
 
 def wrapmethod(method, stats=None):
@@ -27,10 +28,10 @@ def wrapmethod(method, stats=None):
             raise TypeError('too few parameters, `key` is required')
         instance = args[0]
         key = args[1]
-        if '`' in key or '﹁' in key:
+
+        if '﹁' in key:
             raise ValueError('`key` contains invalid character(s)')
-        if key.startswith('sqlite_'):
-            key = f'﹁{key}'
+        key = ProblematicSymbols.remove(key)
 
         if stats is not None:
             t1 = time.perf_counter()
