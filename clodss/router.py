@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 '''
 router.py: provides the Router class to map keys to a corresponding database.
 routing is configured by a sharding factor
@@ -58,20 +60,30 @@ class DBConnection:
 
 class Router:
     'main routing class, maps keys to a db based on a sharding factor'
-    def __init__(self, dbpath, factor=3):
+    EXT = 'clodssdb'
+
+    def __init__(self, dbpath, factor=3, poolsize=50):
+        '''
+        dbpath: where to store the data files
+        factor: partitioning factor, the higher it is, the more spread your
+        data will be. this improves concurrency but also increases the number
+        of open files. defaults to 3 (~4k files)
+        poolsize: pool size per data file, defaults to 10
+        '''
         self.factor = factor
         self.dbpath = dbpath
+        self.poolsize = poolsize
         self.connections = {}
 
     def connection(self, key: bytes):
         'gets a new connection'
         db = hashlib.sha1(key.encode('utf-8')).hexdigest()[:self.factor]
-        fname = os.path.join(self.dbpath, f'{db}.db')
+        fname = os.path.join(self.dbpath, f'{db}.{Router.EXT}')
 
         with ILock(f'clodss-{db}-lock', timeout=5):
             conns = self.connections.get(db)
             if not conns:
-                conns = [DBConnection(fname) for _ in range(50)]
+                conns = [DBConnection(fname) for _ in range(self.poolsize)]
                 self.connections[db] = conns
 
             for _ in range(1024):
