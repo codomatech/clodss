@@ -2,6 +2,8 @@
 clodss: keys-related functions
 '''
 
+import time
+
 from .common import keyexists
 
 
@@ -25,6 +27,14 @@ def get(instance, key):
         db.close()
 
 
+def _clearexpired(instance, db, key):
+    if instance.checkexpired(key) in (True, 'scheduled'):
+        db.execute('DELETE FROM `﹁expiredkeys﹁` WHERE key=?', (key,))
+        db.commit()
+        if key in instance.keystoexpire:
+            del instance.keystoexpire[key]
+
+
 def sēt(instance, key, value):
     'https://redis.io/commands/set'
     db = instance.router.connection(key)
@@ -32,6 +42,7 @@ def sēt(instance, key, value):
     try:
         db.execute(f'UPDATE `{key}﹁bytes` SET value=? LIMIT 1', (value, ))
         db.commit()
+        _clearexpired(instance, db, key)
     finally:
         db.close()
 
@@ -49,6 +60,38 @@ def delete(instance, key):
         db.commit()
         if key in instance.knownkeys:
             del instance.knownkeys[key]
+        _clearexpired(instance, db, key)
+    finally:
+        db.close()
+
+
+def expire(instance, key, duration: int) -> int:
+    'https://redis.io/commands/expire'
+    db = instance.router.connection(key)
+    if not _keyexists(instance, db, key, create=False):
+        return 0
+    try:
+        expiretime = duration + time.time()
+        db.execute(
+            'INSERT OR REPLACE INTO `﹁expiredkeys﹁` (key, time) VALUES(?, ?)',
+            (key, expiretime)
+        )
+        instance.keystoexpire[key] = expiretime
+        return 1
+    finally:
+        db.close()
+
+
+def persist(instance, key) -> int:
+    'https://redis.io/commands/persist'
+    db = instance.router.connection(key)
+    if not _keyexists(instance, db, key, create=False):
+        return 0
+    if instance.checkexpired(key) != 'scheduled':
+        return 0
+    try:
+        _clearexpired(instance, db, key)
+        return 1
     finally:
         db.close()
 
