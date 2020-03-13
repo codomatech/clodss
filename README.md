@@ -26,6 +26,8 @@ The issues section to vote for the next functionality to be developed.
 - [x] decrby
 - [ ] keys
 - [ ] scan
+- [ ] expire
+- [ ] persist
 - [x] lists
     - [x] llen
     - [x] lpop
