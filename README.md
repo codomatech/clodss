@@ -20,8 +20,10 @@ The issues section to vote for the next functionality to be developed.
 - [x] get
 - [x] set
 - [x] del
-- [ ] incr
+- [x] incr
+- [x] incrby
 - [ ] decr
+- [ ] decrby
 - [ ] keys
 - [ ] scan
 - [x] lists
