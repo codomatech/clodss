@@ -189,6 +189,10 @@ def test_lset():
     assert getlist(key) == expected
 
 
+def test_linsert_nonexisting():
+    assert db.linsert('nonexisting-list', 'before', 1, 2) == 0
+
+
 def test_linsert():
     resetlist(key)
     val = '** inserted value **'
