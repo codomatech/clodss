@@ -6,7 +6,7 @@ clodss: keys-related functions
 
 import time
 
-from .common import keyexists, _clearexpired
+from .common import ProblematicSymbols, keyexists, _clearexpired
 
 
 def _keyexists(instance, db, key, create=True):
@@ -134,3 +134,49 @@ def decr(instance, key, amount=1):
 def decrby(instance, key, amount):
     'https://redis.io/commands/decrby'
     return decr(instance, key, amount)
+
+
+def flushdb(instance):
+    'https://redis.io/commands/flushdb'
+    instance.reset()
+
+
+def keys(instance, pattern='*'):
+    '''
+    https://redis.io/commands/keys
+    NOTE: there is no guarantee the keys returned are complete or precise, i.e.
+    some existing keys might be missing and some retured keys might be deleted.
+    For now we favor performance for this specific command, please use hkeys as
+    a reliable alternative.
+    '''
+    allkeys = []
+    pattern = pattern.replace('*', '%')
+    for db in instance.router.allconnections():
+        try:
+            query = ('SELECT name FROM sqlite_master WHERE '
+                     f'name LIKE "{pattern}" AND '
+                     'name NOT LIKE "sqlite_%"')
+            for record in db.execute(query):
+                table = record[0]
+                if table.startswith('﹁'):
+                    continue
+                key = table.split('﹁')[0]
+                allkeys.append(ProblematicSymbols.restore(key))
+        finally:
+            db.close()
+    return allkeys
+
+
+def scan(instance, cursor=None, match='*'):
+    '''
+    https://redis.io/commands/scan
+    currently is the same as `keys`
+    '''
+
+    if cursor not in (None, True):
+        raise ValueError('invalid cursor %r' %cursor)
+
+    if cursor is True:
+        return []
+
+    return True, keys(instance, match)

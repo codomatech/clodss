@@ -154,3 +154,41 @@ def test_persist():
     assert db.persist(key) == 1
     time.sleep(.45)
     assert db.get(key) == value
+
+
+def test_flushdb():
+    for i in range(10):
+        db.set(f'bytes-{i}', i)
+        db.hset(f'map-{i}', 'key', i)
+        db.lpush(f'list-{i}', i)
+    db.flushdb()
+    assert len(db.keys()) == 0
+
+
+def test_keys():
+    db.flushdb()
+    keys = set()
+    for i in range(10):
+        db.set(f'bytes-{i}', i)
+        db.hset(f'map-{i}', 'key', i)
+        db.lpush(f'list-{i}', i)
+        keys |= {f'bytes-{i}', f'map-{i}', f'list-{i}'}
+    assert set(db.keys()) == keys
+    assert set(db.keys('map-*')) == {k for k in keys if k.startswith('map-')}
+
+
+def test_scan():
+    db.flushdb()
+    keys = set()
+    for i in range(10):
+        db.set(f'bytes-{i}', i)
+        db.hset(f'map-{i}', 'key', i)
+        db.lpush(f'list-{i}', i)
+        keys |= {f'bytes-{i}', f'map-{i}', f'list-{i}'}
+    cur, res = db.scan()
+    assert set(res) == keys
+    assert cur == True
+    assert db.scan(cur) == []
+    _, res = db.scan(match='map-*')
+    assert set(res) == {k for k in keys if k.startswith('map-')}
+    #assert set(db.keys('map-*')) == {k for k in keys if k.startswith('map-')}
