@@ -10,6 +10,28 @@ from clodss import clodss
 db = clodss.StrictRedis(db=1, decode_responses=True)
 
 
+def test_invalid_key():
+    with pytest.raises(TypeError):
+        db.get()
+    with pytest.raises(ValueError):
+        db.get('a﹁b')
+
+
+def test_change_type():
+    key = 'byteskey'
+    db.set(key, 123)
+    with pytest.raises(ValueError):
+        db.hset(key, 1, 2)
+    db.knownkeys = {}
+    with pytest.raises(ValueError):
+        db.hset(key, 1, 2)
+
+
+def test_util_funcs():
+    assert type(db.stats()) is dict
+    assert type(db.router.poolstatus()) is dict
+
+
 def test_get():
     key = 'key_get'
     assert db.get(key) is None
