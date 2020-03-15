@@ -24,19 +24,25 @@ def wrapmethod(method, stats=None):
     - enures the key has not expired
     '''
     def wrapper(*args, **kwargs):
-        if len(args) < 2:
-            raise TypeError('too few parameters, `key` is required')
-        instance = args[0]
-        key = args[1]
+        globalmethod = method.__name__ in ('keys', 'scan', 'flushdb')
 
-        if '﹁' in key:
-            raise ValueError('`key` contains invalid character(s)')
-        key = ProblematicSymbols.remove(key)
+        if globalmethod:
+            key = '﹁'
+        else:
+            if len(args) < 2:
+                raise TypeError('too few parameters, `key` is required')
+            instance = args[0]
+            key = args[1]
+
+            if '﹁' in key:
+                raise ValueError('`key` contains invalid character(s)')
+            key = ProblematicSymbols.remove(key)
 
         if stats is not None:
             t1 = time.perf_counter()
         with ILock(f'clodss-{key}', timeout=5):
-            instance.checkexpired(key, enforce=True)
+            if not globalmethod:
+                instance.checkexpired(key, enforce=True)
             result = method(*args, **kwargs)
         if stats is not None:
             t = time.perf_counter() - t1
@@ -116,3 +122,9 @@ class StrictRedis:
             return False
         finally:
             db.close()
+
+    def reset(self):
+        'clears a database and all cached information'
+        self.router.reset()
+        self.knownkeys = {}
+        self.keystoexpire = {}

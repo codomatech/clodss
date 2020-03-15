@@ -75,11 +75,16 @@ class Router:
         self.poolsize = poolsize
         self.connections = {}
 
-    def connection(self, key: bytes):
-        'gets a new connection'
-        db = hashlib.sha1(key.encode('utf-8')).hexdigest()[:self.factor]
-        fname = os.path.join(self.dbpath, f'{db}.{Router.EXT}')
+    def _alldbs(self):
+        return sorted([
+            os.path.join(self.dbpath, f)[:-len(Router.EXT)-1]
+            for f in os.listdir(self.dbpath)
+            if f.endswith(Router.EXT)
+        ])
 
+    def _acquireconnection(self, db):
+        'given an encoded db name, returns a connection'
+        fname = os.path.join(self.dbpath, f'{db}.{Router.EXT}')
         with ILock(f'clodss-{db}-lock', timeout=5):
             conns = self.connections.get(db)
             if not conns:
@@ -93,6 +98,31 @@ class Router:
                     conn.acquire()
                     return conn
                 time.sleep(0.5)
+
+    def reset(self):
+        'clears the database and closes all connections'
+        for db in self._alldbs():
+            try:
+                [conn.close() for conn in self.connections[db]]
+            except KeyError:
+                pass
+            fname = os.path.join(self.dbpath, f'{db}.{Router.EXT}')
+            os.unlink(fname)
+        self.connections = {}
+
+    def connection(self, key: bytes):
+        'gets a new connection'
+        db = hashlib.sha1(key.encode('utf-8')).hexdigest()[:self.factor]
+        return self._acquireconnection(db)
+
+    def allconnections(self, offset: int = 0):
+        '''
+        generator of connections to all available dbs
+        offset: start offset in the alphabetically sorted list of dbs
+        '''
+        dbs = self._alldbs()[offset:]
+        for db in dbs:
+            yield self._acquireconnection(db)
 
     def poolstatus(self):
         'gets pooling status'

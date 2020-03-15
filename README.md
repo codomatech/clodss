@@ -24,8 +24,9 @@ The issues section to vote for the next functionality to be developed.
 - [x] incrby
 - [x] decr
 - [x] decrby
-- [ ] keys
-- [ ] scan
+- [x] keys
+- [x] scan
+- [x] flushdb
 - [x] expire
 - [x] persist
 - [x] lists
