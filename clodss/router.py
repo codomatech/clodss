@@ -2,7 +2,7 @@
 
 '''
 router.py: provides the Router class to map keys to a corresponding database.
-routing is configured by a sharding factor
+routing is configured by a spread factor
 '''
 
 import os
@@ -59,16 +59,16 @@ class DBConnection:
 
 
 class Router:
-    'main routing class, maps keys to a db based on a sharding factor'
+    'main routing class, maps keys to a db based on a spread factor'
     EXT = 'clodssdb'
 
-    def __init__(self, dbpath, factor=3, poolsize=50):
+    def __init__(self, dbpath, factor=2, poolsize=5):
         '''
         dbpath: where to store the data files
         factor: partitioning factor, the higher it is, the more spread your
         data will be. this improves concurrency but also increases the number
-        of open files. defaults to 3 (~4k files)
-        poolsize: pool size per data file, defaults to 10
+        of open files. defaults to 2
+        poolsize: pool size per data file, defaults to 5
         '''
         self.factor = factor
         self.dbpath = dbpath
