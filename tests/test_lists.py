@@ -1,11 +1,11 @@
 '''
 test cases for lists functionality
 '''
-
+import os
 import pytest
 from clodss import clodss
 
-db = clodss.StrictRedis(db=1, decode_responses=True)
+db = clodss.StrictRedis(os.path.realpath(os.path.dirname(__file__) + '/../data'))
 key = 'key-name'
 
 

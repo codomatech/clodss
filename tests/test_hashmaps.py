@@ -3,8 +3,9 @@ test cases for keys functionality
 '''
 
 from clodss import clodss
+import os
 
-db = clodss.StrictRedis(db=1, decode_responses=True)
+db = clodss.StrictRedis(os.path.realpath(os.path.dirname(__file__) + '/../data'))
 
 hkey = 'some-map'
 

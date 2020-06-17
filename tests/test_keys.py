@@ -2,12 +2,13 @@
 test cases for keys functionality
 '''
 
+import os
 import time
 
 import pytest
 from clodss import clodss
 
-db = clodss.StrictRedis(db=1, decode_responses=True)
+db = clodss.StrictRedis(os.path.realpath(os.path.dirname(__file__) + '/../data'))
 
 
 def test_invalid_key():
