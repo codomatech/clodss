@@ -57,13 +57,13 @@ def wrapmethod(method, stats=None):
 class StrictRedis:
     'main clodss class'
     def __init__(
-            self, dbpath: str, db: int = 0, sharding_factor: int = 3,
+            self, dbpath: str, db: int = 0, spread_factor: int = 2,
             decode_responses: bool = False, benchmark: bool = True) -> None:
         self.decode = decode_responses
         dbpath = os.path.join(dbpath, '%02d' % db)
         os.makedirs(dbpath, exist_ok=True)
         self._dbpath = dbpath
-        self.router = Router(dbpath, sharding_factor)
+        self.router = Router(dbpath, spread_factor)
         self.knownkeys = {}
         self.keystoexpire = {}
         self._stats = {} if benchmark else None
