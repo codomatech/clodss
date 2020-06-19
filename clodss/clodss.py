@@ -14,7 +14,7 @@ from .router import Router
 from . import hashmaps
 from . import lists
 from . import keys
-from .common import ProblematicSymbols
+from .common import SEP
 
 
 def wrapmethod(method, stats=None):
@@ -26,24 +26,29 @@ def wrapmethod(method, stats=None):
     def wrapper(*args, **kwargs):
         globalmethod = method.__name__ in ('keys', 'scan', 'flushdb')
 
+        instance = args[0]
         if globalmethod:
             key = '﹁'
         else:
             if len(args) < 2:
                 raise TypeError('too few parameters, `key` is required')
-            instance = args[0]
             key = args[1]
 
-            if '﹁' in key:
-                raise ValueError('`key` contains invalid character(s)')
-            key = ProblematicSymbols.remove(key)
+            if SEP in key:
+                raise ValueError('`key` contains invalid character(s): %s', SEP)
+        dtype = instance.keydtype(key)
+        methodtype = method.__name__[0].encode('utf-8')
+        if methodtype not in (b'l', b'h'):
+            methodtype = ''
+        print(method.__name__, key, dtype, methodtype, globalmethod)
+        if method.__name__ != 'delete' and dtype is not None and not globalmethod and dtype != methodtype:
+            raise ValueError('incompatible operation')
 
         if stats is not None:
             t1 = time.perf_counter()
-        with ILock(f'clodss-{key}', timeout=5):
-            if not globalmethod:
-                instance.checkexpired(key, enforce=True)
-            result = method(*args, **kwargs)
+        if not globalmethod:
+            instance.checkexpired(key, enforce=True)
+        result = method(*args, **kwargs)
         if stats is not None:
             t = time.perf_counter() - t1
             avg, n = stats.get(method.__name__, (0, 0))
@@ -85,43 +90,59 @@ class StrictRedis:
         'gets benchmarking statistics'
         return self._stats
 
+    def makevalue(self, v):
+        if self.decode:
+            return v.decode('utf-8')
+        return v
+
     def dbpath(self):
         'gets base path for database files'
         return self.dbpath
 
+    def keydtype(self, key):
+        db = self.router.connection(key).db()
+        closestkey = b''
+        for k, _ in db[key:]:
+            closestkey = k
+            break
+        if closestkey != key.encode('utf-8') and not closestkey.startswith(f'{key}{SEP}'.encode('utf-8')):
+            return None
+        if not SEP.encode('utf-8') in closestkey:
+            return ''
+        return closestkey.split(SEP.encode('utf-8'))[1]
+
     def checkexpired(self, key, enforce=False):
         'checks if a key expired and removes it if so'
-        db = self.router.connection(key)
+        db = self.router.connection(key).db()
         try:
-            exp = [self.keystoexpire.get(key)]
-            if not exp[0]:
-                query = 'SELECT time FROM `﹁expiredkeys﹁` WHERE key=?'
-                exp = db.execute(query, (key,)).fetchone()
+            exp = self.keystoexpire.get(key)
+            if not exp:
+                try: exp = db[f'{SEP}expire{SEP}{key}']
+                except KeyError: pass
             if exp:
-                t = exp[0]
+                t = float(exp)
                 now = time.time()
+                #print('now', now)
                 if now > t:
+                    print('expiring', key, type(key))
                     if not enforce:
                         return True
-                    ekey = key.replace('"', '""')
-                    tables = db.execute(
-                        'SELECT name FROM sqlite_master WHERE '
-                        f'type="table" AND name LIKE "{ekey}%"').fetchall()
-                    queries = ';\n'.join([f'DROP TABLE `{table[0]}`'
-                                          for table in tables])
-                    db.executescript(queries)
-                    db.commit()
+                    del db[f'{SEP}expire{SEP}{key}'.encode('utf-8')]
+                    for k, _ in db[key:]:
+                        print('checking', k, key, k == key)
+                        if k == key.encode('utf-8') or k.startswith(f'{key}{SEP}'.encode('utf-8')):
+                            print('deleting', k, f'{SEP}expire{SEP}{k}')
+                            del db[k]
+                        else:
+                            break
                     if key in self.knownkeys:
                         del self.knownkeys[key]
 
-                    query = 'DELETE FROM `﹁expiredkeys﹁` WHERE key=?'
-                    db.execute(query, (key,))
-                    db.commit()
                     return True
                 return 'scheduled'
             return False
         finally:
-            db.close()
+            pass
 
     def reset(self):
         'clears a database and all cached information'

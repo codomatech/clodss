@@ -4,12 +4,12 @@
 clodss: list data-structure
 '''
 
-from .common import keyexists
+#from .common import keyexists
 
+from .common import SEP
 
-def _listexists(instance, db, key, create=True):
-    tables = [f'{key}﹁l', f'{key}﹁r']
-    return keyexists('list', tables, instance, db, key, create)
+def _augkey(lkey):
+    return f'{lkey}{SEP}l{SEP}'
 
 
 def llen(instance, key) -> int:
@@ -37,14 +37,14 @@ def rpush(instance, key, val):
 
 def lpush(instance, key, val):
     'https://redis.io/commands/lpush'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        db.execute(f'INSERT INTO `{key}﹁l` VALUES(?)', (val,))
-        db.commit()
-        return 1
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    prefix = _augkey(key)
+    n = 0
+    for k, _ in db[prefix + '0':]:
+        if not k.startswith(key.encode('utf-8')):
+            break
+        n += 1
+    db[prefix + str(n + 1)] = val
 
 
 def rpop(instance, key):
