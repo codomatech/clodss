@@ -5,7 +5,10 @@ test cases for keys functionality
 from clodss import clodss
 import os
 
-db = clodss.StrictRedis(os.path.realpath(os.path.dirname(__file__) + '/../data'))
+db = clodss.StrictRedis(
+    os.path.realpath(os.path.dirname(__file__) + '/../data'),
+    decode_responses=True
+)
 
 hkey = 'some-map'
 
