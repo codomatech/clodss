@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="clodss",
-    version="0.0.2",
+    version="0.0.3",
     author="Codoma.tech Team",
     author_email="info@codoma.tech",
     description="On-Disk data-structures store with redis-like API.",
