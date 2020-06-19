@@ -10,8 +10,8 @@ and does not burden accesses with network latency.
 import logging
 import time
 import os
-import __main__
 from ilock import ILock
+import __main__
 from .router import Router
 from . import hashmaps
 from . import lists
