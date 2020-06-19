@@ -7,8 +7,10 @@ which scales beyond memory capacity, allows harnessing multi-core processors,
 and does not burden accesses with network latency.
 '''
 
+import logging
 import time
 import os
+import __main__
 from ilock import ILock
 from .router import Router
 from . import hashmaps
@@ -57,8 +59,14 @@ def wrapmethod(method, stats=None):
 class StrictRedis:
     'main clodss class'
     def __init__(
-            self, dbpath: str, db: int = 0, spread_factor: int = 2,
+            self, dbpath: str = None, db: int = 0, spread_factor: int = 2,
             decode_responses: bool = False, benchmark: bool = True) -> None:
+        if dbpath is None:
+            d = os.path.dirname(__main__.__file__)
+            if d == '':
+                d = '.'
+            dbpath = os.path.realpath(f'{d}/./clodss-data')
+        logging.info('clodss db path: %s', dbpath)
         self.decode = decode_responses
         dbpath = os.path.join(dbpath, '%02d' % db)
         os.makedirs(dbpath, exist_ok=True)
