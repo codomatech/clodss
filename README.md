@@ -9,6 +9,8 @@
 which scales beyond memory capacity, allows harnessing multi-core processors, and
 does not burden accesses with network latency.
 
+`clodss` is a product of [Codoma.tech](https://www.codoma.tech/).
+
 ---
 <a name="myfootnote1">*</a> *"Close"* as opposed to *"Remote"*.
 
