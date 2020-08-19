@@ -5,7 +5,10 @@ import os
 import pytest
 from clodss import clodss
 
-db = clodss.StrictRedis(os.path.realpath(os.path.dirname(__file__) + '/../data'))
+db = clodss.StrictRedis(
+    os.path.realpath(os.path.dirname(__file__) + '/../data'),
+    decode_responses=True
+)
 key = 'key-name'
 
 
