@@ -40,11 +40,13 @@ def wrapmethod(method, stats=None):
                 raise ValueError('`key` contains invalid character(s): %s', SEP)
         dtype = instance.keydtype(key)
         methodtype = method.__name__[0].encode('utf-8')
-        if methodtype not in (b'l', b'h'):
+        if method.__name__ in ('rpush', 'rpop'):
+            methodtype = b'l'
+        elif methodtype not in (b'l', b'h'):
             methodtype = ''
-        print(method.__name__, key, dtype, methodtype, globalmethod)
+        #print(method.__name__, key, dtype, methodtype, globalmethod)
         if method.__name__ != 'delete' and dtype is not None and not globalmethod and dtype != methodtype:
-            raise ValueError('incompatible operation')
+            raise ValueError('incompatible operation `%s` on %s' %(method.__name__, dtype))
 
         if stats is not None:
             t1 = time.perf_counter()
@@ -67,7 +69,11 @@ class StrictRedis:
             self, dbpath: str = None, db: int = 0, spread_factor: int = 2,
             decode_responses: bool = False, benchmark: bool = True) -> None:
         if dbpath is None:
-            d = os.path.dirname(__main__.__file__)
+            try:
+                fname = __main__.__file__
+            except AttributeError:
+                fname = '<unknown>'
+            d = os.path.dirname(fname)
             if d == '':
                 d = '.'
             dbpath = os.path.realpath(f'{d}/./clodss-data')
@@ -105,7 +111,7 @@ class StrictRedis:
 
     def dbpath(self):
         'gets base path for database files'
-        return self.dbpath
+        return self._dbpath
 
     def keydtype(self, key):
         db = self.router.connection(key).db()
