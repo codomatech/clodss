@@ -44,7 +44,7 @@ class Router:
 
     def _alldbs(self):
         return sorted([
-            os.path.join(self.dbpath, f)[:-len(Router.EXT)-1]
+            os.path.join(self.dbpath, f)
             for f in os.listdir(self.dbpath)
             if f.endswith(Router.EXT)
         ])
@@ -52,14 +52,13 @@ class Router:
     def reset(self):
         'clears the database and closes all connections'
         for db in self._alldbs():
-            fname = os.path.join(self.dbpath, f'{db}.{Router.EXT}')
-            os.unlink(fname)
+            os.unlink(db)
         self.connections = {}
 
     def connection(self, key: bytes):
         'gets a new connection'
         db = hashlib.sha1(key.encode('utf-8')).hexdigest()[:self.factor]
-        return DBConnection(db)
+        return DBConnection(os.path.join(self.dbpath, f'{db}.{Router.EXT}'))
 
     def allconnections(self, offset: int = 0):
         '''
@@ -68,7 +67,7 @@ class Router:
         '''
         dbs = self._alldbs()[offset:]
         for db in dbs:
-            yield db
+            yield DBConnection(db)
 
     def poolstatus(self):
         'gets pooling status'
