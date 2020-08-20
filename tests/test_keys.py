@@ -7,15 +7,19 @@ import time
 
 import pytest
 from clodss import clodss
+from clodss.common import SEP
 
-db = clodss.StrictRedis(os.path.realpath(os.path.dirname(__file__) + '/../data'))
+db = clodss.StrictRedis(
+    os.path.realpath(os.path.dirname(__file__) + '/../data'),
+    decode_responses=True
+)
 
 
 def test_invalid_key():
     with pytest.raises(TypeError):
         db.get()
     with pytest.raises(ValueError):
-        db.get('a﹁b')
+        db.get(f'a{SEP}b')
 
 
 def test_change_type():
@@ -154,7 +158,7 @@ def test_expire():
     assert db.expire(key, .5) == 1
     time.sleep(.1)
     assert db.get(key) == value
-    time.sleep(.45)
+    time.sleep(.5)
     assert db.get(key) is None
 
 

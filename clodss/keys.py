@@ -4,108 +4,82 @@
 clodss: keys-related functions
 '''
 
+import re
 import time
 
-from .common import ProblematicSymbols, keyexists, _clearexpired
+from .common import SEP, _clearexpired
 
 
-def _keyexists(instance, db, key, create=True):
-    tables = [f'{key}﹁bytes']
-    initquery = f'INSERT INTO `{key}﹁bytes` VALUES(0)'
-    return keyexists('bytes', tables, instance, db,
-                     key, create, initquery=initquery)
+def _keyexists(db, key):
+    for k, _ in db[key.encode('utf-8'):]:
+        if k == key.encode('utf-8') or k.startswith(
+                f'{key}{SEP}'.encode('utf-8')):
+            return True
+        break
+    return False
 
 
 def get(instance, key):
     'https://redis.io/commands/get'
-    db = instance.router.connection(key)
-    exists = _keyexists(instance, db, key, create=False)
+    db = instance.router.connection(key).db()
     try:
-        if not exists:
-            return None
-        res = db.execute(f'SELECT value FROM `{key}﹁bytes` LIMIT 1').fetchone()
-        return res[0]
-    finally:
-        db.close()
+        return instance.makevalue(db[key])
+    except KeyError:
+        return None
 
 
 def sēt(instance, key, value):
     'https://redis.io/commands/set'
-    db = instance.router.connection(key)
-    _keyexists(instance, db, key, create=True)
-    try:
-        db.execute(f'UPDATE `{key}﹁bytes` SET value=? LIMIT 1', (value, ))
-        db.commit()
-        _clearexpired(instance, db, key)
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    db[key] = value
 
 
 def delete(instance, key):
     'https://redis.io/commands/del'
-    db = instance.router.connection(key)
-    try:
-        ekey = key.replace('"', '""')
-        tables = db.execute(
-            'SELECT name FROM sqlite_master WHERE '
-            f'type="table" AND name LIKE "{ekey}%"').fetchall()
-        queries = ';\n'.join([f'DROP TABLE `{table[0]}`' for table in tables])
-        db.executescript(queries)
-        db.commit()
-        if key in instance.knownkeys:
-            del instance.knownkeys[key]
-        _clearexpired(instance, db, key)
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    for k, _ in db[key:]:
+        if k == key.encode('utf-8') or k.startswith(
+                f'{key}{SEP}'.encode('utf-8')):
+            del db[k]
+        else:
+            break
 
 
-def expire(instance, key, duration: int) -> int:
+def expire(instance, key, duration: float) -> int:
     'https://redis.io/commands/expire'
-    db = instance.router.connection(key)
-    if not _keyexists(instance, db, key, create=False):
+    db = instance.router.connection(key).db()
+    if not _keyexists(db, key):
+        print('key doesnt exist', key)
         return 0
-    try:
-        expiretime = duration + time.time()
-        db.execute(
-            'INSERT OR REPLACE INTO `﹁expiredkeys﹁` (key, time) VALUES(?, ?)',
-            (key, expiretime)
-        )
-        instance.keystoexpire[key] = expiretime
-        return 1
-    finally:
-        db.close()
+    expiretime = duration + time.time()
+    db[f'{SEP}expire{SEP}{key}'] = expiretime
+    instance.keystoexpire[key] = expiretime
+    return 1
 
 
 def persist(instance, key) -> int:
     'https://redis.io/commands/persist'
-    db = instance.router.connection(key)
-    if not _keyexists(instance, db, key, create=False):
+    db = instance.router.connection(key).db()
+    if not _keyexists(db, key):
         return 0
     if instance.checkexpired(key) != 'scheduled':
         return 0
-    try:
-        _clearexpired(instance, db, key)
-        return 1
-    finally:
-        db.close()
+    _clearexpired(instance, db, key)
+    return 1
 
 
 def incr(instance, key, amount=1):
     'https://redis.io/commands/incr'
-    db = instance.router.connection(key)
-    _keyexists(instance, db, key, create=True)
+    db = instance.router.connection(key).db()
     try:
-        res = db.execute(f'SELECT value FROM `{key}﹁bytes` LIMIT 1').fetchone()
-        try:
-            val = int('0' if res is None else res[0])
-        except ValueError:
-            raise TypeError(f'value stored at {key} is not an integer')
-        val += amount
-        db.execute(f'UPDATE `{key}﹁bytes` SET value=? LIMIT 1', (val, ))
-        db.commit()
-        return val
-    finally:
-        db.close()
+        val = db[key]
+    except KeyError:
+        val = 0
+    try:
+        val = int(val)
+    except ValueError:
+        raise TypeError('invalid numeric %s' %val)
+    db[key] = val + amount
 
 
 def incrby(instance, key, amount):
@@ -115,20 +89,16 @@ def incrby(instance, key, amount):
 
 def decr(instance, key, amount=1):
     'https://redis.io/commands/decr'
-    db = instance.router.connection(key)
-    _keyexists(instance, db, key, create=True)
+    db = instance.router.connection(key).db()
     try:
-        res = db.execute(f'SELECT value FROM `{key}﹁bytes` LIMIT 1').fetchone()
-        try:
-            val = int('0' if res is None else res[0])
-        except ValueError:
-            raise TypeError(f'value stored at {key} is not an integer')
-        val -= amount
-        db.execute(f'UPDATE `{key}﹁bytes` SET value=? LIMIT 1', (val, ))
-        db.commit()
-        return val
-    finally:
-        db.close()
+        val = db[key]
+    except KeyError:
+        val = 0
+    try:
+        val = int(val)
+    except ValueError:
+        raise TypeError('invalid numeric %s' %val)
+    db[key] = int(val) - amount
 
 
 def decrby(instance, key, amount):
@@ -150,20 +120,14 @@ def keys(instance, pattern='*'):
     a reliable alternative.
     '''
     allkeys = []
-    pattern = pattern.replace('*', '%')
+    pattern = pattern.replace('*', '.*')
+    regex = re.compile(pattern)
     for db in instance.router.allconnections():
-        try:
-            query = ('SELECT name FROM sqlite_master WHERE '
-                     f'name LIKE "{pattern}" AND '
-                     'name NOT LIKE "sqlite_%"')
-            for record in db.execute(query):
-                table = record[0]
-                if table.startswith('﹁'):
-                    continue
-                key = table.split('﹁')[0]
-                allkeys.append(ProblematicSymbols.restore(key))
-        finally:
-            db.close()
+        for k, _ in db.db():
+            k = k.split(SEP.encode('utf-8'))[0]
+            #print('adding key', k)
+            if regex.match(k.decode('utf-8')):
+                allkeys.append(instance.makevalue(k))
     return allkeys
 
 

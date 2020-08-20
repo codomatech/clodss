@@ -4,331 +4,227 @@
 clodss: list data-structure
 '''
 
-from .common import keyexists
+from .common import SEP
+
+MAX_DIGITS = 12
 
 
-def _listexists(instance, db, key, create=True):
-    tables = [f'{key}﹁l', f'{key}﹁r']
-    return keyexists('list', tables, instance, db, key, create)
+MIDDLE_INDEX = int(10 ** (MAX_DIGITS / 2))
+
+
+def _augkey(lkey):
+    return f'{lkey}{SEP}l{SEP}'
+
+
+def _maxkey(lkey, db, asint=True):
+    prefix = _augkey(lkey).encode('utf-8')
+    maxkey = None
+    for k, _ in db[prefix::True]:
+        maxkey = k
+        break
+    if maxkey is None or not maxkey.startswith(prefix):
+        return None
+    return maxkey if not asint else int(maxkey[len(prefix):])
+
+
+def _minkey(lkey, db, asint=True):
+    prefix = _augkey(lkey).encode('utf-8')
+    minkey = None
+    for k, _ in db[prefix:]:
+        minkey = k
+        break
+    if minkey is None or not minkey.startswith(prefix):
+        return None
+    return minkey if not asint else int(minkey[len(prefix):])
 
 
 def llen(instance, key) -> int:
     'https://redis.io/commands/llen'
-    db = instance.router.connection(key)
-    try:
-        left = db.execute(f'SELECT COUNT(*) FROM `{key}﹁l`').fetchone()
-        right = db.execute(f'SELECT COUNT(*) FROM `{key}﹁r`').fetchone()
-        return left[0] + right[0]
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    prefix = _augkey(key).encode('utf-8')
+    n = 0
+    for k, _ in db[prefix:]:
+        if not k.startswith(prefix):
+            break
+        n += 1
+    return n
 
 
 def rpush(instance, key, val):
     'https://redis.io/commands/rpush'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        db.execute(f'INSERT INTO `{key}﹁r` VALUES(?)', (val,))
-        db.commit()
-        return 1
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    prefix = _augkey(key).encode('utf-8')
+    maxkey = _maxkey(key, db)
+    index = MIDDLE_INDEX if maxkey is None else maxkey
+    indexstr = f'%0{MAX_DIGITS}d' % (index + 1)
+    if len(indexstr) > MAX_DIGITS:
+        # TO DO: cleanup to use deleted indices
+        raise Exception('list is too big')
+    db[prefix + indexstr.encode('utf-8')] = val
 
 
 def lpush(instance, key, val):
     'https://redis.io/commands/lpush'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        db.execute(f'INSERT INTO `{key}﹁l` VALUES(?)', (val,))
-        db.commit()
-        return 1
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    prefix = _augkey(key).encode('utf-8')
+    minkey = _minkey(key, db)
+    index = MIDDLE_INDEX if minkey is None else minkey
+    index = index - 1
+    if index < 0:
+        # TO DO: cleanup to use deleted indices
+        raise Exception('list is too big')
+    indexstr = f'%0{MAX_DIGITS}d' % (index)
+    db[prefix + indexstr.encode('utf-8')] = val
 
 
 def rpop(instance, key):
     'https://redis.io/commands/rpop'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        table = f'{key}﹁r'
-        res = db.execute(
-            f'SELECT ROWID, value FROM `{table}` ORDER BY ROWID DESC LIMIT 1'
-        ).fetchone()
-        if not res:
-            table = f'{key}﹁l'
-            res = db.execute(f'''SELECT ROWID, value FROM `{table}`
-                             ORDER BY ROWID ASC LIMIT 1''').fetchone()
-            if not res:
-                return None
-        rowid, val = res
-        db.execute(f'DELETE FROM `{table}` WHERE ROWID=?', (rowid,))
-        db.commit()
-        return val
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    maxkey = _maxkey(key, db, False)
+    if maxkey is None:
+        return None
+    v = db[maxkey]
+    del db[maxkey]
+    return instance.makevalue(v)
 
 
 def lpop(instance, key):
     'https://redis.io/commands/lpop'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        table = f'{key}﹁l'
-        res = db.execute(
-            f'SELECT ROWID, value FROM `{table}` ORDER BY ROWID DESC LIMIT 1'
-        ).fetchone()
-        if not res:
-            table = f'{key}﹁r'
-            res = db.execute(f'''SELECT ROWID, value FROM `{table}`
-                             ORDER BY ROWID ASC LIMIT 1''').fetchone()
-            if not res:
-                return None
-        rowid, val = res
-        db.execute(f'DELETE FROM `{table}` WHERE ROWID=?', (rowid,))
-        db.commit()
-        return val
-    finally:
-        db.close()
-
-
-def _locateindex(db, key, index: int):
-    'finds the table and offset for a given index'
-    table = f'{key}﹁l'
-    res = db.execute(f'SELECT COUNT(*) FROM `{table}`').fetchone()
-    lcount = res[0]
-    if index < lcount:
-        order = 'DESC'
-    else:
-        index -= lcount
-        table = f'{key}﹁r'
-        order = 'ASC'
-    return index, table, order
-
-
-def _normalize_index(i: int, size: int, allowoverflow=True) -> int:
-    'normalizes negative and oob indices'
-    if i < 0:
-        i += (abs(i)//size + 1) * size
-        return i % size
-
-    if i >= size and not allowoverflow:
+    db = instance.router.connection(key).db()
+    minkey = _minkey(key, db, False)
+    if minkey is None:
         return None
-    return min(i, size - 1)
+    v = db[minkey]
+    del db[minkey]
+    return instance.makevalue(v)
+
+
+def _normalizeindex(index, lkey, instance):
+    if index >= 0:
+        return index
+    l = llen(instance, lkey)
+    if l == 0:
+        return 0
+    return (index + (-index // l + 1) * l) % l
+
+
+def _lindex(lkey, index: int, instance):
+    db = instance.router.connection(lkey).db()
+    prefix = _augkey(lkey).encode('utf-8')
+    index = _normalizeindex(index, lkey, instance)
+    i = 0
+    key = None
+    for k, _ in db[prefix:]:
+        if not k.startswith(prefix):
+            break
+        if i == index:
+            key = k
+            break
+        i += 1
+    return key
 
 
 def lindex(instance, key, index: int):
     'https://redis.io/commands/lindex'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        size = llen(instance, key)
-        index = _normalize_index(index, size, False)
-        if index is None:
-            return None
-        index, table, order = _locateindex(db, key, index)
-        query = f'''SELECT value FROM `{table}`
-                    ORDER BY ROWID {order} LIMIT 1 OFFSET {index}'''
-        res = db.execute(query).fetchone()
-        return res[0]
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    k = _lindex(key, index, instance)
+    if k is None:
+        return None
+    return instance.makevalue(db[k])
 
 
-def lset(instance, key, index: int, value):
+def lset(instance, key, index: int, value: bytes):
     'https://redis.io/commands/lset'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        size = llen(instance, key)
-        index = _normalize_index(index, size, False)
-        if index is None:
-            raise ValueError('out of bound index')
-        index, table, order = _locateindex(db, key, index)
-        query = f'''SELECT ROWID FROM `{table}`
-                    ORDER BY ROWID {order} LIMIT 1 OFFSET {index}'''
-        rowid = db.execute(query).fetchone()[0]
-        db.execute(f'UPDATE `{table}` SET VALUE=? WHERE ROWID=?',
-                   (value, rowid))
-        db.commit()
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    k = _lindex(key, index, instance)
+    if k is None:
+        return
+    db[k] = value
 
 
 def lrange(instance, key, start: int, end: int):
     'https://redis.io/commands/lrange'
-    db = instance.router.connection(key)
-    cursor = db.cursor()
-    cursor2 = db.cursor()
-    _listexists(instance, db, key)
-    try:
-        size = llen(instance, key)
-        start = _normalize_index(start, size)
-        end = _normalize_index(end, size)
-
-        if start > end:
-            raise ValueError('end should be >= start')
-
-        sindex, stable, sorder = _locateindex(db, key, start)
-        eindex, etable, eorder = _locateindex(db, key, end)
-
-        if stable == etable:
-            n = eindex - sindex + 1
-            query = f'''SELECT value FROM `{stable}`
-                        ORDER BY ROWID {sorder} LIMIT {n} OFFSET {sindex}'''
-            cursor.execute(query)
-            return [record[0] for record in cursor]
-
-        cursor.execute(f'''SELECT value FROM `{stable}`
-                    ORDER BY ROWID {sorder} LIMIT -1 OFFSET {sindex}''')
-
-        cursor2.execute(f'''SELECT value FROM `{etable}`
-                    ORDER BY ROWID {eorder} LIMIT {eindex + 1} OFFSET 0''')
-        return [record[0] for record in cursor] + [
-            record[0] for record in cursor2]
-    finally:
-        cursor.close()
-        cursor2.close()
-        db.close()
+    db = instance.router.connection(key).db()
+    k0 = _lindex(key, start, instance)
+    k1 = _lindex(key, end, instance)
+    if k0 is None:
+        return None
+    if k1 is None:
+        k1 = _maxkey(key, db, False)
+    return [instance.makevalue(v) for _, v in db[k0:k1]]
 
 
 def ltrim(instance, key, start: int, end: int) -> None:
     'https://redis.io/commands/ltrim'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        size = llen(instance, key)
-        s, e = start, end
-        start = _normalize_index(start, size)
-        end = _normalize_index(end, size)
-
-        truncate = s > e >= 0
-        if truncate or start > end or start >= size:
-            db.executescript('\n'.join([
-                f'DELETE FROM `{key}﹁l`;',
-                f'DELETE FROM `{key}﹁r`;'
-                ]))
-            db.commit()
-            return None
-
-        sindex, stable, sorder = _locateindex(db, key, start)
-        eindex, etable, _ = _locateindex(db, key, end)
-
-        if stable != etable:
-            rlen = db.execute(f'SELECT COUNT(*) FROM `{stable}`').fetchone()[0]
-            sindex = rlen - sindex
-            eindex += 1
-            db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {sindex}')
-            db.execute(f'DELETE FROM `{etable}` LIMIT -1 OFFSET {eindex}')
-        else:
-            if sorder == 'ASC':
-                db.execute(f'DELETE FROM `{key}﹁l`')
-                rsize = eindex - sindex + 1
-                db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
-                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {rsize}')
-            else:
-                db.execute(f'DELETE FROM `{key}﹁r`')
-                rlen = db.execute(
-                    f'SELECT COUNT(*) FROM `{stable}`').fetchone()[0]
-                rsize = eindex - sindex + 1
-                sindex = rlen - eindex - 1
-                db.execute(f'DELETE FROM `{stable}` LIMIT {sindex} OFFSET 0')
-                db.execute(f'DELETE FROM `{stable}` LIMIT -1 OFFSET {rsize}')
-        db.commit()
-        return None
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    prefix = _augkey(key).encode('utf-8')
+    start = _normalizeindex(start, key, instance)
+    end = _normalizeindex(end, key, instance)
+    if start > end:
+        instance.delete(key)
+        return
+    i = 0
+    for k, _ in db[prefix:]:
+        if not k.startswith(prefix):
+            break
+        if not start <= i <= end:
+            del db[k]
+        i += 1
 
 
-def lrem(instance, key, count: int, value) -> None:
+def lrem(instance, key, count: int, value: bytes) -> None:
     'https://redis.io/commands/lrem'
-    db = instance.router.connection(key)
-    _listexists(instance, db, key)
-    try:
-        if count == 0:
-            db.execute(f'DELETE FROM `{key}﹁l` WHERE value=?', (value,))
-            db.execute(f'DELETE FROM `{key}﹁r` WHERE value=?', (value,))
-            db.commit()
-            return None
-
-        if count < 0:
-            tables = [(f'{key}﹁r', 'DESC'), (f'{key}﹁l', 'ASC')]
-            limit = -count
-        else:
-            tables = [(f'{key}﹁l', 'DESC'), (f'{key}﹁r', 'ASC')]
-            limit = count
-
-        nremoved = 0
-        for table, order in tables:
-            size = limit - nremoved
-            res = db.execute(f'''DELETE FROM `{table}` WHERE value=?
-                             ORDER BY ROWID {order} LIMIT {size}''',
-                             (value, ))
-            nremoved += res.rowcount
-            if nremoved == limit:
-                break
-        db.commit()
-        return None
-    finally:
-        db.close()
+    db = instance.router.connection(key).db()
+    prefix = _augkey(key).encode('utf-8')
+    todel = []
+    iterable = db[prefix::True] if count < 0 else db[prefix:]
+    limit = int(10**MAX_DIGITS) if count == 0 else abs(count)
+    for k, v in iterable:
+        if v == value.encode('utf-8'):
+            todel.append(k)
+        if len(todel) == limit:
+            break
+        if not k.startswith(prefix):
+            break
+    for k in todel:
+        del db[k]
+    return len(todel)
 
 
 def linsert(instance, key, where, refvalue, value) -> int:
     'https://redis.io/commands/linsert'
-    db = instance.router.connection(key)
-    cursor = db.cursor()
-    exists = _listexists(instance, db, key, False)
-    try:
-        if not exists:
-            return 0
-
-        size = llen(instance, key)
-        where = where.lower()
-
-        table = f'{key}﹁l'
-        res = db.execute(f'''SELECT ROWID FROM `{table}` WHERE value=?
-                         ORDER BY ROWID DESC LIMIT 1''',
-                         (refvalue, )).fetchone()
-        if res is not None:
-            rowid = res[0]
-            db.execute(f'INSERT INTO `{table}` VALUES("")')
-            db.commit()
-            op = '>' if where == 'before' else '>='
-            cursor.execute(f'''SELECT ROWID, value FROM `{table}`
-                           WHERE ROWID {op} {rowid}''')
-            prv = value
-            params = []
-            for rowid, val in cursor:
-                params.append((prv, rowid))
-                prv = val
-            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?',
-                           params)
-            db.commit()
-            return size + 1
-
-        table = f'{key}﹁r'
-        query = f'''SELECT ROWID FROM `{table}` WHERE value=?
-                    ORDER BY ROWID ASC LIMIT 1'''
-        res = db.execute(query, (refvalue, )).fetchone()
-        if res is not None:
-            rowid = res[0]
-            db.execute(f'INSERT INTO `{table}` VALUES("")')
-            db.commit()
-            op = '>=' if where == 'before' else '>'
-            cursor.execute(f'''SELECT ROWID, value FROM `{table}`
-                           WHERE ROWID {op} {rowid}''')
-            prv = value
-            params = []
-            for rowid, val in cursor:
-                params.append((prv, rowid))
-                prv = val
-            db.executemany(f'UPDATE `{table}` SET value=? WHERE ROWID=?',
-                           params)
-            db.commit()
-            return size + 1
-
-        return size
-    finally:
-        cursor.close()
-        db.close()
+    db = instance.router.connection(key).db()
+    if instance.keydtype(key) is None:
+        return 0
+    prefix = _augkey(key).encode('utf-8')
+    marker = SEP * 10
+    n = 0
+    found = False
+    cache = {}
+    for k, v in db[prefix:]:
+        if not k.startswith(prefix):
+            break
+        n += 1
+        if found:
+            if len(cache) >= 42:
+                for ck, cv in cache.items():
+                    db[ck] = cv
+                cache = {}
+            cache[k] = prev
+            prev = v
+        else:
+            if v == refvalue.encode('utf-8'):
+                found = True
+                instance.rpush(key, marker)
+                if where == 'before':
+                    prev = refvalue
+                    cache[k] = value
+                else:
+                    prev = value
+    if found:
+        for ck, cv in cache.items():
+            db[ck] = cv
+        lastkey = _maxkey(key, db, False)
+        print('last key=', lastkey)
+        db[lastkey] = prev
+    return -1 if not found else n
