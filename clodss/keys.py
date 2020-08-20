@@ -12,7 +12,8 @@ from .common import SEP, _clearexpired
 
 def _keyexists(db, key):
     for k, _ in db[key.encode('utf-8'):]:
-        if k == key.encode('utf-8') or k.startswith(f'{key}{SEP}'.encode('utf-8')):
+        if k == key.encode('utf-8') or k.startswith(
+                f'{key}{SEP}'.encode('utf-8')):
             return True
         break
     return False
@@ -36,14 +37,12 @@ def sēt(instance, key, value):
 def delete(instance, key):
     'https://redis.io/commands/del'
     db = instance.router.connection(key).db()
-    key = key
     for k, _ in db[key:]:
-        if k == key.encode('utf-8') or k.startswith(f'{key}{SEP}'.encode('utf-8')):
-            print('deleting', k)
+        if k == key.encode('utf-8') or k.startswith(
+                f'{key}{SEP}'.encode('utf-8')):
             del db[k]
         else:
             break
-    return
 
 
 def expire(instance, key, duration: float) -> int:
