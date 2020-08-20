@@ -10,7 +10,6 @@ and does not burden accesses with network latency.
 import logging
 import time
 import os
-from ilock import ILock
 import __main__
 from .router import Router
 from . import hashmaps
@@ -37,7 +36,7 @@ def wrapmethod(method, stats=None):
             key = args[1]
 
             if SEP in key:
-                raise ValueError('`key` contains invalid character(s): %s', SEP)
+                raise ValueError(f'`key` contains invalid character(s): {SEP}')
         dtype = instance.keydtype(key)
         methodtype = method.__name__[0].encode('utf-8')
         if method.__name__ in ('rpush', 'rpop'):
@@ -45,8 +44,10 @@ def wrapmethod(method, stats=None):
         elif methodtype not in (b'l', b'h'):
             methodtype = ''
         #print(method.__name__, key, dtype, methodtype, globalmethod)
-        if method.__name__ != 'delete' and dtype is not None and not globalmethod and dtype != methodtype:
-            raise ValueError('incompatible operation `%s` on %s' %(method.__name__, dtype))
+        if method.__name__ != 'delete' and dtype is not None \
+            and not globalmethod and dtype != methodtype:
+            raise ValueError('incompatible operation `%s` on %s' %(
+                method.__name__, dtype))
 
         if stats is not None:
             t1 = time.perf_counter()
@@ -105,6 +106,7 @@ class StrictRedis:
         return self._stats
 
     def makevalue(self, v):
+        'makes value respecting decode_responses setting'
         if self.decode:
             return v.decode('utf-8')
         return v
@@ -114,12 +116,14 @@ class StrictRedis:
         return self._dbpath
 
     def keydtype(self, key):
+        'get key data type'
         db = self.router.connection(key).db()
         closestkey = b''
         for k, _ in db[key:]:
             closestkey = k
             break
-        if closestkey != key.encode('utf-8') and not closestkey.startswith(f'{key}{SEP}'.encode('utf-8')):
+        if closestkey != key.encode('utf-8') and not closestkey.startswith(
+                f'{key}{SEP}'.encode('utf-8')):
             return None
         if not SEP.encode('utf-8') in closestkey:
             return ''
@@ -131,8 +135,10 @@ class StrictRedis:
         try:
             exp = self.keystoexpire.get(key)
             if not exp:
-                try: exp = db[f'{SEP}expire{SEP}{key}']
-                except KeyError: pass
+                try:
+                    exp = db[f'{SEP}expire{SEP}{key}']
+                except KeyError:
+                    pass
             if exp:
                 t = float(exp)
                 now = time.time()
@@ -144,7 +150,8 @@ class StrictRedis:
                     del db[f'{SEP}expire{SEP}{key}'.encode('utf-8')]
                     for k, _ in db[key:]:
                         print('checking', k, key, k == key)
-                        if k == key.encode('utf-8') or k.startswith(f'{key}{SEP}'.encode('utf-8')):
+                        if k == key.encode('utf-8') or k.startswith(
+                                f'{key}{SEP}'.encode('utf-8')):
                             print('deleting', k, f'{SEP}expire{SEP}{k}')
                             del db[k]
                         else:

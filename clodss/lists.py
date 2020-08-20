@@ -4,7 +4,6 @@
 clodss: list data-structure
 '''
 
-from lsm import SEEK_LE, SEEK_GE
 from .common import SEP
 
 MAX_DIGITS = 12
@@ -44,7 +43,7 @@ def llen(instance, key) -> int:
     db = instance.router.connection(key).db()
     prefix = _augkey(key).encode('utf-8')
     n = 0
-    for k, v in db[prefix:]:
+    for k, _ in db[prefix:]:
         if not k.startswith(prefix):
             break
         n += 1
@@ -59,7 +58,7 @@ def rpush(instance, key, val):
     index = MIDDLE_INDEX if maxkey is None else maxkey
     indexstr = f'%0{MAX_DIGITS}d' % (index + 1)
     if len(indexstr) > MAX_DIGITS:
-        # TODO cleanup to use deleted indices
+        # TO DO: cleanup to use deleted indices
         raise Exception('list is too big')
     db[prefix + indexstr.encode('utf-8')] = val
 
@@ -72,7 +71,7 @@ def lpush(instance, key, val):
     index = MIDDLE_INDEX if minkey is None else minkey
     index = index - 1
     if index < 0:
-        # TODO cleanup to use deleted indices
+        # TO DO: cleanup to use deleted indices
         raise Exception('list is too big')
     indexstr = f'%0{MAX_DIGITS}d' % (index)
     db[prefix + indexstr.encode('utf-8')] = val
@@ -81,7 +80,6 @@ def lpush(instance, key, val):
 def rpop(instance, key):
     'https://redis.io/commands/rpop'
     db = instance.router.connection(key).db()
-    prefix = _augkey(key).encode('utf-8')
     maxkey = _maxkey(key, db, False)
     if maxkey is None:
         return None
@@ -107,7 +105,7 @@ def _normalizeindex(index, lkey, instance):
     l = llen(instance, lkey)
     if l == 0:
         return 0
-    return (index + (-index // l + 1) * l ) % l
+    return (index + (-index // l + 1) * l) % l
 
 
 def _lindex(lkey, index: int, instance):
@@ -140,7 +138,7 @@ def lset(instance, key, index: int, value: bytes):
     db = instance.router.connection(key).db()
     k = _lindex(key, index, instance)
     if k is None:
-        return None
+        return
     db[k] = value
 
 

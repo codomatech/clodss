@@ -11,7 +11,7 @@ def _augkey(hkey, key):
 
 
 def _db(instance, hkey):
-  return instance.router.connection(hkey).db()
+    return instance.router.connection(hkey).db()
 
 
 def hset(instance, hkey, key, val):
@@ -26,7 +26,7 @@ def hget(instance, hkey, key):
     db = _db(instance, hkey)
     try:
         return instance.makevalue(db[_augkey(hkey, key)])
-    except:
+    except KeyError:
         return None
 
 
@@ -83,4 +83,3 @@ def hmset(instance, hkey, mapping):
 def hmget(instance, hkey, *keys):
     'https://redis.io/commands/hmget'
     return [hget(instance, hkey, k) for k in keys]
-

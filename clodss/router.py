@@ -6,23 +6,24 @@ routing is configured by a spread factor
 '''
 
 import os
-import sqlite3
 import hashlib
-import time
 import uuid
-from ilock import ILock
-from lsm import LSM
+import lsm
 
 class DBConnection:
     'a database connection used within a pool'
     def __init__(self, fname):
-        self.id = uuid.uuid1().hex
+        self._id = uuid.uuid1().hex
         self.free = True
-        self._db = LSM(fname)
+        self._db = lsm.LSM(fname)
 
     def db(self):
         'db object'
         return self._db
+
+    def id(self):
+        'connection id'
+        return self._id
 
 
 class Router:
