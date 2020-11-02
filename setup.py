@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="clodss",
-    version="0.0.3",
+    version="0.0.4",
     author="Codoma.tech Team",
     author_email="info@codoma.tech",
     description="On-Disk data-structures store with redis-like API.",
@@ -20,6 +20,6 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
     install_requires=[
-        'ilock',
+        'lsm-db',
     ],
 )
