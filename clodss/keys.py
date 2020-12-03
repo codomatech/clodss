@@ -79,7 +79,9 @@ def incr(instance, key, amount=1):
         val = int(val)
     except ValueError:
         raise TypeError('invalid numeric %s' %val)
-    db[key] = val + amount
+    newval = val + amount
+    db[key] = newval
+    return newval
 
 
 def incrby(instance, key, amount):
@@ -98,7 +100,9 @@ def decr(instance, key, amount=1):
         val = int(val)
     except ValueError:
         raise TypeError('invalid numeric %s' %val)
-    db[key] = int(val) - amount
+    newval = int(val) - amount
+    db[key] = newval
+    return newval
 
 
 def decrby(instance, key, amount):
