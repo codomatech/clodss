@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/codomatech/clodss.svg?branch=master)](https://travis-ci.org/codomatech/clodss)
-[![Code Quality Grade](https://www.code-inspector.com/project/2529/status/svg)](https://www.code-inspector.com/public/project/2529/clodss/dashboard)
-[![Code Quality Score](https://www.code-inspector.com/project/2529/score/svg)](https://www.code-inspector.com/public/project/2529/clodss/dashboard)
+[![Code Quality Grade](https://www.code-inspector.com/project/2529/status/svg)](https://frontend.code-inspector.com/public/project/2529/clodss/dashboard)
+[![Code Quality Score](https://www.code-inspector.com/project/2529/score/svg)](https://frontend.code-inspector.com/public/project/2529/clodss/dashboard)
 
 # `CLODSS`: *Clo*se<sup>[*](#myfootnote1)</sup> *D*ata-*S*tructures *S*tore #
 
