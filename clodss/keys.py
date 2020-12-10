@@ -77,8 +77,8 @@ def incr(instance, key, amount=1):
         val = 0
     try:
         val = int(val)
-    except ValueError:
-        raise TypeError('invalid numeric %s' %val)
+    except ValueError as e:
+        raise TypeError('invalid numeric %s' %val) from e
     newval = val + amount
     db[key] = newval
     return newval
@@ -98,8 +98,8 @@ def decr(instance, key, amount=1):
         val = 0
     try:
         val = int(val)
-    except ValueError:
-        raise TypeError('invalid numeric %s' %val)
+    except ValueError as e:
+        raise TypeError('invalid numeric %s' %val) from e
     newval = int(val) - amount
     db[key] = newval
     return newval
