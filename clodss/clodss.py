@@ -43,7 +43,7 @@ def wrapmethod(method, stats=None):
             methodtype = b'l'
         elif methodtype not in (b'l', b'h'):
             methodtype = ''
-        #print(method.__name__, key, dtype, methodtype, globalmethod)
+        logging.debug(method.__name__, key, dtype, methodtype, globalmethod)
         if method.__name__ != 'delete' and dtype is not None \
             and not globalmethod and dtype != methodtype:
             raise ValueError('incompatible operation `%s` on %s' %(
@@ -142,17 +142,16 @@ class StrictRedis:
             if exp:
                 t = float(exp)
                 now = time.time()
-                #print('now', now)
                 if now > t:
-                    print('expiring', key, type(key))
+                    logging.debug('expiring', key, type(key))
                     if not enforce:
                         return True
                     del db[f'{SEP}expire{SEP}{key}'.encode('utf-8')]
                     for k, _ in db[key:]:
-                        print('checking', k, key, k == key)
+                        logging.debug('checking', k, key, k == key)
                         if k == key.encode('utf-8') or k.startswith(
                                 f'{key}{SEP}'.encode('utf-8')):
-                            print('deleting', k, f'{SEP}expire{SEP}{k}')
+                            logging.debug('delete', k, f'{SEP}expire{SEP}{k}')
                             del db[k]
                         else:
                             break
