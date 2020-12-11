@@ -118,21 +118,28 @@ def flushdb(instance):
 def keys(instance, pattern='*'):
     '''
     https://redis.io/commands/keys
-    NOTE: there is no guarantee the keys returned are complete or precise, i.e.
+    NOTE: generator: there is no guarantee the keys returned are complete or
+    precise, i.e.
     some existing keys might be missing and some retured keys might be deleted.
     For now we favor performance for this specific command, please use hkeys as
     a reliable alternative.
     '''
-    allkeys = []
     pattern = pattern.replace('*', '.*')
     regex = re.compile(pattern)
+    sep = SEP.encode('utf-8')
+    yielded_compounds = set()
     for db in instance.router.allconnections():
         for k, _ in db.db():
-            k = k.split(SEP.encode('utf-8'))[0]
+            compound = sep in k
+            k = k.split(sep)[0]
+            if compound:
+                if k in yielded_compounds:
+                    continue
+                else:
+                    yielded_compounds.add(k)
             #print('adding key', k)
             if regex.match(k.decode('utf-8')):
-                allkeys.append(instance.makevalue(k))
-    return allkeys
+                yield instance.makevalue(k)
 
 
 def scan(instance, cursor=None, match='*'):

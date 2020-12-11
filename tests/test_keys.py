@@ -189,7 +189,7 @@ def test_flushdb():
         db.hset(f'map-{i}', 'key', i)
         db.lpush(f'list-{i}', i)
     db.flushdb()
-    assert len(db.keys()) == 0
+    assert len(list(db.keys())) == 0
 
 
 def test_keys():
