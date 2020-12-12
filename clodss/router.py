@@ -5,11 +5,11 @@ router.py: provides the Router class to map keys to a corresponding database.
 routing is configured by a spread factor
 '''
 
-import os
 import hashlib
+import os
+import random
 import uuid
 import lsm
-import random
 
 class DBConnection:
     'a database connection used within a pool'

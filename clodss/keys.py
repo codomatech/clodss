@@ -129,7 +129,7 @@ def keys(instance, pattern='*', checkexpired=True):
     for db in instance.router.allconnections():
         for k, _ in db.db():
             if checkexpired and instance.checkexpired(
-                k.decode('utf-8'), enforce=True) == True:
+                k.decode('utf-8'), enforce=True) is True:
                 continue
             compound = sep in k
             k = k.split(sep)[0]
@@ -138,8 +138,7 @@ def keys(instance, pattern='*', checkexpired=True):
             if compound:
                 if k in yielded_compounds:
                     continue
-                else:
-                    yielded_compounds.add(k)
+                yielded_compounds.add(k)
             if regex.match(k.decode('utf-8')):
                 yield instance.makevalue(k)
 

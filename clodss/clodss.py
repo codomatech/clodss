@@ -145,15 +145,15 @@ class StrictRedis:
                 t = float(exp)
                 now = time.time()
                 if now > t:
-                    LOG.debug('expiring', key, type(key))
+                    LOG.debug('expiring %r (%r)', key, type(key))
                     if not enforce:
                         return True
                     del db[f'{SEP}expire{SEP}{key}'.encode('utf-8')]
                     for k, _ in db[key:]:
-                        LOG.debug('checking', k, key, k == key)
+                        LOG.debug('checking %r, %r, %r', k, key, k == key)
                         if k == key.encode('utf-8') or k.startswith(
                                 f'{key}{SEP}'.encode('utf-8')):
-                            LOG.debug('delete', k, f'{SEP}expire{SEP}{k}')
+                            LOG.debug('delete %r %r', k, f'{SEP}expire{SEP}{k}')
                             del db[k]
                         else:
                             break
