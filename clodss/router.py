@@ -9,6 +9,7 @@ import os
 import hashlib
 import uuid
 import lsm
+import random
 
 class DBConnection:
     'a database connection used within a pool'
@@ -16,6 +17,7 @@ class DBConnection:
         self._id = uuid.uuid1().hex
         self.free = True
         self._db = lsm.LSM(fname)
+        self.fname = fname
 
     def db(self):
         'db object'
@@ -41,7 +43,7 @@ class Router:
         self.factor = factor
         self.dbpath = dbpath
         self.poolsize = poolsize
-        self.connections = {}
+        self.pool = {}
 
     def _alldbs(self):
         return sorted([
@@ -54,12 +56,19 @@ class Router:
         'clears the database and closes all connections'
         for db in self._alldbs():
             os.unlink(db)
-        self.connections = {}
+        self.pool = {}
 
     def connection(self, key: bytes):
         'gets a new connection'
         db = hashlib.sha1(key.encode('utf-8')).hexdigest()[:self.factor]
-        return DBConnection(os.path.join(self.dbpath, f'{db}.{Router.EXT}'))
+        dbs = self.pool.get(db)
+        if not dbs:
+            self.pool[db] = [
+                DBConnection(os.path.join(self.dbpath, f'{db}.{Router.EXT}'))
+                for _ in range(self.poolsize)
+            ]
+            dbs = self.pool[db]
+        return random.choice(dbs)
 
     def allconnections(self, offset: int = 0):
         '''
@@ -67,10 +76,14 @@ class Router:
         offset: start offset in the alphabetically sorted list of dbs
         '''
         dbs = self._alldbs()[offset:]
+        pooldbs = {dbs[0].fname: dbs[0] for dbs in self.pool.values()}
         for db in dbs:
-            yield DBConnection(db)
+            try:
+                yield pooldbs[db]
+            except KeyError:
+                yield DBConnection(db)
 
     def poolstatus(self):
         'gets pooling status'
         return {k: [conn.free for conn in conns]
-                for k, conns in self.connections.items()}
+                for k, conns in self.pool.items()}

@@ -115,14 +115,12 @@ def flushdb(instance):
     instance.reset()
 
 
-def keys(instance, pattern='*'):
+def keys(instance, pattern='*', checkexpired=True):
     '''
     https://redis.io/commands/keys
-    NOTE: generator: there is no guarantee the keys returned are complete or
-    precise, i.e.
-    some existing keys might be missing and some retured keys might be deleted.
-    For now we favor performance for this specific command, please use hkeys as
-    a reliable alternative.
+    generator function, non standard parameter `checkexpired` allows disabling
+    expiry check, which improves performance but will return keys which should
+    be expired
     '''
     pattern = pattern.replace('*', '.*')
     regex = re.compile(pattern)
@@ -130,14 +128,18 @@ def keys(instance, pattern='*'):
     yielded_compounds = set()
     for db in instance.router.allconnections():
         for k, _ in db.db():
+            if checkexpired and instance.checkexpired(
+                k.decode('utf-8'), enforce=True) == True:
+                continue
             compound = sep in k
             k = k.split(sep)[0]
+            if not k:
+                continue
             if compound:
                 if k in yielded_compounds:
                     continue
                 else:
                     yielded_compounds.add(k)
-            #print('adding key', k)
             if regex.match(k.decode('utf-8')):
                 yield instance.makevalue(k)
 

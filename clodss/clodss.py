@@ -17,6 +17,8 @@ from . import lists
 from . import keys
 from .common import SEP
 
+LOG = logging.getLogger('clodss')
+
 
 def wrapmethod(method, stats=None):
     '''
@@ -43,7 +45,7 @@ def wrapmethod(method, stats=None):
             methodtype = b'l'
         elif methodtype not in (b'l', b'h'):
             methodtype = ''
-        logging.debug(method.__name__, key, dtype, methodtype, globalmethod)
+        LOG.debug(method.__name__, key, dtype, methodtype, globalmethod)
         if method.__name__ != 'delete' and dtype is not None \
             and not globalmethod and dtype != methodtype:
             raise ValueError('incompatible operation `%s` on %s' %(
@@ -78,7 +80,7 @@ class StrictRedis:
             if d == '':
                 d = '.'
             dbpath = os.path.realpath(f'{d}/./clodss-data')
-        logging.info('clodss db path: %s', dbpath)
+        LOG.info('clodss db path: %s', dbpath)
         self.decode = decode_responses
         dbpath = os.path.join(dbpath, '%02d' % db)
         os.makedirs(dbpath, exist_ok=True)
@@ -143,15 +145,15 @@ class StrictRedis:
                 t = float(exp)
                 now = time.time()
                 if now > t:
-                    logging.debug('expiring', key, type(key))
+                    LOG.debug('expiring', key, type(key))
                     if not enforce:
                         return True
                     del db[f'{SEP}expire{SEP}{key}'.encode('utf-8')]
                     for k, _ in db[key:]:
-                        logging.debug('checking', k, key, k == key)
+                        LOG.debug('checking', k, key, k == key)
                         if k == key.encode('utf-8') or k.startswith(
                                 f'{key}{SEP}'.encode('utf-8')):
-                            logging.debug('delete', k, f'{SEP}expire{SEP}{k}')
+                            LOG.debug('delete', k, f'{SEP}expire{SEP}{k}')
                             del db[k]
                         else:
                             break
