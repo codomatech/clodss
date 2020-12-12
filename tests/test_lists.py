@@ -198,14 +198,14 @@ def test_linsert_nonexisting():
 
 def test_linsert():
     resetlist(key)
-    val = '** inserted value **'
+    val = '** inserted **'
     for refvalue in ('-10', '-01', '+05', '+10'):
         db.linsert(key, 'before', refvalue, val)
         db.linsert(key, 'after', refvalue, val)
     expected = [
-        "** inserted value **",
+        val,
         "-10",
-        "** inserted value **",
+        val,
         "-09",
         "-08",
         "-07",
@@ -214,23 +214,23 @@ def test_linsert():
         "-04",
         "-03",
         "-02",
-        "** inserted value **",
+        val,
         "-01",
-        "** inserted value **",
+        val,
         "+01",
         "+02",
         "+03",
         "+04",
-        "** inserted value **",
+        val,
         "+05",
-        "** inserted value **",
+        val,
         "+06",
         "+07",
         "+08",
         "+09",
-        "** inserted value **",
+        val,
         "+10",
-        "** inserted value **"
+        val
     ]
     assert getlist(key) == expected
 

@@ -197,10 +197,12 @@ def linsert(instance, key, where, refvalue, value) -> int:
     if instance.keydtype(key) is None:
         return 0
     prefix = _augkey(key).encode('utf-8')
+
     marker = SEP * 10
     n = 0
     found = False
     cache = {}
+    prev = None
     for k, v in db[prefix:]:
         if not k.startswith(prefix):
             break
@@ -224,7 +226,8 @@ def linsert(instance, key, where, refvalue, value) -> int:
     if found:
         for ck, cv in cache.items():
             db[ck] = cv
-        lastkey = _maxkey(key, db, False)
-        print('last key=', lastkey)
-        db[lastkey] = prev
+        strprev = prev.decode('utf-8') if type(prev) != str else prev
+        if strprev != marker:
+            lastkey = _maxkey(key, db, False)
+            db[lastkey] = prev
     return -1 if not found else n
