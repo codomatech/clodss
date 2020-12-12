@@ -226,7 +226,7 @@ def linsert(instance, key, where, refvalue, value) -> int:
     if found:
         for ck, cv in cache.items():
             db[ck] = cv
-        strprev = prev.decode('utf-8') if type(prev) != str else prev
+        strprev = prev if isinstance(prev, str) else prev.decode('utf-8')
         if strprev != marker:
             lastkey = _maxkey(key, db, False)
             db[lastkey] = prev
