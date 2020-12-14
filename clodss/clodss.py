@@ -10,6 +10,7 @@ and does not burden accesses with network latency.
 import logging
 import time
 import os
+from random import random
 import __main__
 from .router import Router
 from . import hashmaps
@@ -26,7 +27,7 @@ def wrapmethod(method, stats=None):
     - performs sanity checks on key
     - enures the key has not expired
     '''
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
         globalmethod = method.__name__ in ('keys', 'scan', 'flushdb')
 
         instance = args[0]
@@ -55,7 +56,18 @@ def wrapmethod(method, stats=None):
             t1 = time.perf_counter()
         if not globalmethod:
             instance.checkexpired(key, enforce=True)
-        result = method(*args, **kwargs)
+
+        ntries = 0
+        while True:
+            try:
+                result = method(*args, **kwargs)
+                break
+            except Exception:  # pylint: disable=broad-except
+                ntries += 1
+                if ntries >= 30:
+                    raise
+                time.sleep(random()/10)
+
         if stats is not None:
             t = time.perf_counter() - t1
             avg, n = stats.get(method.__name__, (0, 0))
